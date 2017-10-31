@@ -62,7 +62,7 @@ public class CentroidCreate extends Service {
                             for (DataSnapshot zoneDetail : zone.getChildren()) {
                                 kt2[0] = false;
                                 databaseReference.child("Kmean").child("centroid").child(zone.getKey()).child(zoneDetail.getKey()).setValue(zoneDetail.getValue());
-                                Log.i("System.out",zone.getKey()+" - "+zoneDetail.getKey()+" : "+zoneDetail.getValue());
+                                //Log.i("System.out",zone.getKey()+" - "+zoneDetail.getKey()+" : "+zoneDetail.getValue());
                                 if (j2++ == zone.getChildrenCount()-1) kt2[0] = true;
                             }
                             j++;

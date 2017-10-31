@@ -19,6 +19,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.dotoan.musicrecommendation.Contruct.Contruct;
 import com.example.dotoan.musicrecommendation.MainPage.NavigationActivity;
 import com.example.dotoan.musicrecommendation.services.CentroidCreate;
 import com.example.dotoan.musicrecommendation.services.DistanceCom;
@@ -42,9 +43,13 @@ import com.gun0912.tedpermission.TedPermission;
 import com.jaredrummler.android.device.DeviceName;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -102,7 +107,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void downloadFile(String s) {
-
         TelephonyManager telephonyManager = (TelephonyManager)getBaseContext().getSystemService(Context.TELEPHONY_SERVICE);
         deviceId = telephonyManager.getDeviceId();
 
@@ -405,19 +409,19 @@ public class MainActivity extends AppCompatActivity {
                 int objPos[] ;
                 int objVal[] ;
 
-                float simCombine[][];
+                Double simCombine[][];
 
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
-
                     int nx = (int) dataSnapshot.child("Kmean/centroid").getChildrenCount();
                     int ny = (int) dataSnapshot.child("habitatMatrix").getChildrenCount();
-
-                    simCombine = new float [nx][ny];
+                    List<Double> log;
+                    simCombine = new Double [nx][ny];
                     int x =0;
                     for (DataSnapshot zone: dataSnapshot.child("Kmean/centroid").getChildren()){
                         cenPos = new int[(int) zone.getChildrenCount()];
                         cenVal = new int[(int) zone.getChildrenCount()];
+                        log = new ArrayList<Double>();
                         int i =0, y=0;
                         for(DataSnapshot zoneDetail: zone.getChildren()){
                             cenPos[i] = Integer.parseInt(zoneDetail.getKey().toString());
@@ -434,9 +438,10 @@ public class MainActivity extends AppCompatActivity {
                             }
 
                             if (cenVal != null && cenPos !=null){
-                                float sim = similarityDistance(cenVal,cenPos,objVal,objPos);
+                                Double sim = similarityDistance(cenVal,cenPos,objVal,objPos);
                                 simCombine[x][y++] = sim;
-                                Log.i("System.out","Similarity of user " + zone.getKey() +" with user "+zone1.getKey()+" equal "+ String.valueOf(sim));
+                                //log.add(sim);
+                                //Log.i("System.out","Similarity of user " + zone.getKey() +" with user "+zone1.getKey()+" equal "+ String.valueOf(sim));
                             }
                         }
                         //Log.e("ENDLOOP",x+" : " +simCombine[x].length+ " ------------------------------------------------------------------");
@@ -484,36 +489,86 @@ public class MainActivity extends AppCompatActivity {
             return m;
         }
 
-        private float similarityDistance(int centVal[],int centPos[], int objVal[],int objPos[]){
+        private void patchValue(int m[],String s){
+            List<Integer> h = new ArrayList<Integer>();
+            for (int i = 0;i<m.length;i++ )
+                h.add(m[i]);
+            Log.e("pathValue",s+" | size ="+h.size());
+            Log.d("m", String.valueOf(h));
+        }
+
+
+        private Double similarityDistance(int centVal[],int centPos[], int objVal[],int objPos[]){
             float tag =0, cenX=0,cenY=0,sol =0;
+            List <Integer> cenval = new ArrayList<Integer>();
+            List <Integer> cenpos = new ArrayList<Integer>();
+            List <Integer> objval = new ArrayList<Integer>();
+            List <Integer> objpos = new ArrayList<Integer>();
+            Log.e("end","____________________________________________________________________");
+            patchValue(centPos,"cenpos");
+            patchValue(objPos,"objpos");
+            patchValue(centVal,"cenval");
+            patchValue(objVal,"objval");
+
             if (centPos.length>=objPos.length) {
                 for (int i = 0; i < centPos.length; i++) {
-                    if (i<objPos.length && centPos[i] == objPos[i]) {
-                        tag = centVal[i] - objVal[i];
+                    if (i<objPos.length) {
+                        for (int j =0;j< objPos.length;j++) {
+                            if (centPos[i] == objPos[j]) {
+                                Log.d("tag1", "cenval[" + i + "]-objval[" + j + "]");
+                                tag = tag + (centVal[i] - objVal[j])*(centVal[i] - objVal[j]);
+                                break;
+                            }
+
+                            if (j == objPos.length-1){
+                                cenX = cenX + centVal[i]*centVal[i];
+                                cenY = cenY + objVal[i]*objVal[i];
+                                //Log.d("tag11", i+ " cenX = "+cenX+", cenY = "+cenY);
+                            }
+                        }
                     } else {
-                        cenX = centVal[i];
-                        if (i < objPos.length) cenY = objVal[i];
+                        cenX = cenX + centVal[i]*centVal[i];
+                        //cenY = objVal[i];
+                        //Log.d("tag1", "cenX = "+cenX+", cenY = "+cenY);
                     }
-                    sol = sol + tag * tag + cenX * cenX + cenY * cenY;
+                    //Log.e("sol", sol+" + "+tag+" + "+cenX+" + "+cenY);
+                    sol = tag + cenX + cenY ;
+                    //Log.e("sol",sol+"");
                 }
             }else{
                 for (int i = 0; i < objPos.length; i++) {
-                    if (i< centPos.length && centPos[i] == objPos[i]) {
-                        tag = centVal[i] - objVal[i];
+                    if (i< centPos.length) {
+                        for (int j =0;j< centPos.length;j++) {
+                            if (centPos[j] == objPos[i]) {
+                                Log.d("tag2", "cenval[" + j + "]-objval[" + i + "]");
+                                tag = tag + (centVal[j] - objVal[i])*(centVal[j] - objVal[i]);
+
+                                break;
+                            }
+
+                            if (j == centPos.length-1){
+                                cenX = cenX + centVal[i]*centVal[i];
+                                cenY = cenY + objVal[i]*objVal[i];
+                                //Log.d("tag21", i+" cenX = "+cenX+", cenY = "+cenY);
+                            }
+                        }
                     } else {
-                        if (i<centPos.length) cenX = centVal[i];
-                        cenY = objVal[i];
+                        //cenX = centVal[i];
+                        cenY = cenY + objVal[i]*objVal[i];
+                        //Log.d("tag2", i+" cenX = "+cenX+", cenY = "+cenY);
                     }
-                    sol = sol + tag * tag + cenX * cenX + cenY * cenY;
+                    //Log.e("sol", sol+" + "+tag+" + "+cenX+" + "+cenY);
+                    sol = tag + cenX + cenY ;
+                    //Log.e("sol",sol+"");
                 }
             }
-            return (float) Math.sqrt(sol);
+            return (Double) Math.sqrt(sol);
         }
 
-        private void groupCen(float m[][]){
+        private void groupCen(Double m[][]){
             Log.e("groupCen","Running...");
             final int combine[][] = new int [n][nUser];
-            float[] checkm;
+            Double[] checkm;
             for (int i =0; i < n;i++ ) {
                 for (int j = 0; j < nUser; j++) {
                     combine[i][j] = 0;
@@ -525,48 +580,45 @@ public class MainActivity extends AppCompatActivity {
             Log.e("SYS","--------------------------------------------------");
 
             for (int i =0 ; i< m[0].length;i++){
-                checkm = new float[n];
-                List<Float> a = new ArrayList<Float>();
+                checkm = new Double[n];
                 for (int j =0; j< n; j++){
                     checkm[j] = m[j][i];
-                    a.add(m[j][i]);
                 }
                 combine[smallestVal(checkm)][i] = 1;
-                //Log.e("a",a+"");
                 Log.i("System.out","combine["+smallestVal(checkm)+"]["+i+"])");
             }
             Log.e("Balance: ",balance(combine)+"");
 
             databaseReference.child("Kmean").child("balance").setValue(balance(combine));
-            if (!balance(combine)) {
-                int habitat[][] = new int [nUser][nMusic];
-                habitat = Matrix();
 
-                final Timer timer = new Timer();
-                final int[][] finalHabitat = habitat;
-                timer.schedule(new TimerTask() {
-                    boolean t1 = false,t2 = false;
-                    @Override
-                    public void run() {
-                        databaseReference.child("Kmean").child("centroid").removeValue();
-                        databaseReference.child("app").child("controlv2").setValue(false);
-                        for (int i =0; i<n;i++) {
-                            final List<Integer> sumMatrix = new ArrayList<Integer>();
-                            for (int j = 0; j < nUser; j++){
-                                if (combine[i][j] == 1){
-                                    sumMatrix.add(j);
+                if (!balance(combine)) {
+                    int habitat[][] = new int [nUser][nMusic];
+                    habitat = Matrix();
+
+                    final Timer timer = new Timer();
+                    final int[][] finalHabitat = habitat;
+                    timer.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            databaseReference.child("Kmean").child("centroid").removeValue();
+                            databaseReference.child("app").child("controlv2").setValue(false);
+                            for (int i =0; i<n;i++) {
+                                final List<Integer> sumMatrix = new ArrayList<Integer>();
+                                for (int j = 0; j < nUser; j++){
+                                    if (combine[i][j] == 1){
+                                        sumMatrix.add(j);
+                                    }
                                 }
+                                Log.e("sumMatrix",i+": "+sumMatrix+"");
+                                timer.schedule(new PushParameter(i,sumMatrix,finalHabitat),5000);
                             }
-                            Log.e("sumMatrix",i+": "+sumMatrix+"");
-
-                            timer.schedule(new PushParameter(i,sumMatrix,finalHabitat),1500);
                         }
-                    }
-                },5000);
-            }
+                    },5000);
+                }
         }
 
         private boolean balance(int m[][]){
+            Log.e("balance","Running...");
             boolean k = false;
             int temp[] = new int [nUser];
             for (int i =0; i < n; i++){
@@ -574,7 +626,7 @@ public class MainActivity extends AppCompatActivity {
                 for (int j = 0;j < nUser;j++){
                     sum += m[i][j];
                 }
-                Log.d("Balance number",i+" -> "+sum);
+                //Log.d("Balance number",i+" -> "+sum);
                 temp[i]= sum;
             }
 
@@ -598,11 +650,12 @@ public class MainActivity extends AppCompatActivity {
             return k;
         }
 
-        private int smallestVal(float m[]){
-            float sma = m[0];
+        private int smallestVal(Double m[]){
+            Log.e("smallestVal","Running...");
+            Double sma = m[0];
             int pos =0;
             for (int i =1;i<m.length;i++){
-                if (sma > m[i]) {
+                if (m[i] < sma) {
                     sma = m[i];
                     pos = i;
                 }
@@ -644,27 +697,27 @@ public class MainActivity extends AppCompatActivity {
                         int k =0;
                         for (int j : sumMatrix){
                             k++;
-                            Log.e("List sumMatrix",j+"");
+//                            Log.e("List sumMatrix",j+"");
                             for (int temp = 0; temp< finalHabitat[j].length; temp++){
                                 arr[temp] = arr[temp] + finalHabitat[j][temp];
-                                if (arr[temp]!=0) {
-                                    System.out.println("sumMatrix="+j+", arr["+temp+"]="+arr[temp]);
-                                    if (temp == finalHabitat[j].length-1 && k == sumMatrix.size()){
-                                        databaseReference.child("Kmean").child("02lastuser").setValue(temp);
-                                    }
+                            }
+
+                            for(int temp =0; temp< finalHabitat[j].length; temp++)
+                            if (arr[temp]!=0) {
+                                //System.out.println("sumMatrix="+j+", arr["+temp+"]="+arr[temp]);
+                                if (temp == finalHabitat[j].length-1 && k == sumMatrix.size()){
+                                    databaseReference.child("Kmean").child("02lastuser").setValue(temp);
                                 }
                             }
                         }
-                        Timer timer1 = new Timer();
-                        timer1.schedule(new TimerTask() {
-                            @Override
-                            public void run() {
-                                for (int temp =0; temp < nMusic; temp++){
-                                    if (arr[temp]!=0) databaseReference.child("Kmean").child("centroid").child(String.valueOf(i)).child(String.valueOf(temp)).setValue(arr[temp]);
-                                }
-                            }
-                        },2000);
 
+                        Map<String,Integer> time = new HashMap<>();
+
+                        for (int temp =0; temp < nMusic; temp++){
+                            if (arr[temp]!=0) time.put(String.valueOf(temp),arr[temp]);
+                        }
+
+                        databaseReference.child("Kmean").child("centroid").child(String.valueOf(i)).setValue(time);
                     }
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
