@@ -67,6 +67,7 @@ public class CentroidCreate extends Service {
                             }
                             j++;
                             if (j==n) {
+                                databaseReference.child("app").child("control").setValue(1);
                                 break;
                             }
                         }
@@ -90,66 +91,5 @@ public class CentroidCreate extends Service {
     public void onDestroy() {
         super.onDestroy();
         Log.e("CentroidCreate","Stop");
-    }
-
-    private void cenIni(final int m[][]){
-        final int tempini[][] = new int [nUser][nMusic];
-
-        for (int i =0; i<nUser;i++){
-            for (int j =0; j< nMusic;j++){
-                tempini[i][j] = 0;
-            }
-        }
-
-        final DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
-        databaseReference.child("Kmean/centroid").removeValue();
-        databaseReference.addValueEventListener(new ValueEventListener() {
-            int i =0;
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                for(DataSnapshot zone:dataSnapshot.child("habitatMatrix").getChildren()){
-                    int upos = Integer.parseInt(zone.getKey().toString());
-                    for(DataSnapshot zoneDetail: zone.getChildren()){
-                        int pos = Integer.parseInt(zoneDetail.getKey().toString());
-                        int val = Integer.parseInt(zoneDetail.getValue().toString());
-                        tempini[upos][pos] = val;
-                    }
-                    if (i++ == zone.getChildrenCount()-1) databaseReference.child("app").child("control").child("newCen").setValue(true);
-                }
-
-                boolean s = (boolean) dataSnapshot.child("app").child("control").child("newCen").getValue();
-                if (s){
-                    newCen(m,tempini);
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
-    }
-
-    private void newCen(int m[][],int tempini[][]){
-        int temp[];
-        for (int i=0;i<n;i++){
-            temp = new int[nUser];
-            int k =0;
-            for (int j =0;j<nUser; j++){
-                if (m[i][j] == 1) temp[k++] = j;
-            }
-
-            DatabaseReference data = FirebaseDatabase.getInstance().getReference("Kmean/centroid");
-
-            for (int t = 0; t< nMusic; t++ ) {
-                float sol = 0;
-                for (int j = 0; j < temp.length; j++) {
-                    sol = sol + tempini[temp[j]][t];
-                }
-                sol = sol/temp.length;
-                data.child(String.valueOf(i)).child(String.valueOf(t)).setValue(sol);
-                Log.e("check","String.valueOf("+i+")).child(String.valueOf("+t+")).setValue("+sol+")");
-            }
-        }
     }
 }

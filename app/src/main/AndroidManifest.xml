@@ -60,10 +60,6 @@
             android:enabled="true"
             android:exported="true" />
         <service
-            android:name=".services.DistanceCom"
-            android:enabled="true"
-            android:exported="true" />
-        <service
             android:name=".services.FirebaseEventListener"
             android:enabled="true"
             android:exported="true"></service>

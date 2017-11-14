@@ -19,17 +19,16 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.dotoan.musicrecommendation.Contruct.Contruct;
+import com.example.dotoan.musicrecommendation.Contruct.DistanceC;
+import com.example.dotoan.musicrecommendation.Contruct.FilterC;
+import com.example.dotoan.musicrecommendation.Contruct.ListC;
+import com.example.dotoan.musicrecommendation.Contruct.Node;
 import com.example.dotoan.musicrecommendation.MainPage.NavigationActivity;
-import com.example.dotoan.musicrecommendation.services.CentroidCreate;
-import com.example.dotoan.musicrecommendation.services.DistanceCom;
-import com.example.dotoan.musicrecommendation.services.FirebaseEventListener;
-import com.example.dotoan.musicrecommendation.services.UpdateService;
+import com.example.dotoan.musicrecommendation.SQLite.DBManager;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -43,15 +42,9 @@ import com.gun0912.tedpermission.TedPermission;
 import com.jaredrummler.android.device.DeviceName;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -65,9 +58,14 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.processText) TextView txtv;
     @BindView(R.id.updateText) TextView txtvUpdate;
 
+    static String DBname = "parameter";
+    static String TBname = "min_max";
+
     int n = 25;
     int nMusic = 13369;
     int nUser = 1259;
+    int[] count = {1};
+    boolean isStart = true;
 
     String app = "music.apk";
     FirebaseDatabase database = FirebaseDatabase.getInstance();
@@ -102,8 +100,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Intent myService = new Intent(MainActivity.this, UpdateService.class);
-        stopService(myService);
+        Log.e("App","MainActivity is off");
     }
 
     private void downloadFile(String s) {
@@ -222,9 +219,6 @@ public class MainActivity extends AppCompatActivity {
         PermissionListener permissionlistener = new PermissionListener() {
             @Override
             public void onPermissionGranted() {
-                DatabaseReference database = FirebaseDatabase.getInstance().getReference();
-                database.child("app").child("control").setValue(0);
-                database.child("Kmean").child("centroid").removeValue();
                 hacking();
                 if (signIn_check()){
                     progressBar.setVisibility(View.VISIBLE);
@@ -250,89 +244,8 @@ public class MainActivity extends AppCompatActivity {
                 .check();
     }
 
-
     private void hacking(){
-        final int[] count = {1};
-        Intent listen = new Intent(MainActivity.this, FirebaseEventListener.class);
-        startService(listen);
-        DatabaseReference d1 = FirebaseDatabase.getInstance().getReference("Kmean");
-        d1.child("01process").setValue(false);
-        d1.child("02lastuser").setValue(0);
-        databaseReference.child("balance").setValue(false);
-
-        databaseReference.child("habitatMatrix").child(String.valueOf(n-1)).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                int temp =0;
-                int num = (int) dataSnapshot.getChildrenCount();
-                for (DataSnapshot zone: dataSnapshot.getChildren()){
-                    temp++;
-                    if (temp == num){
-                        databaseReference.child("Kmean").child("02lastuser").setValue(zone.getKey());
-                    }
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
-
-        final DatabaseReference data = FirebaseDatabase.getInstance().getReference("app");
-        data.child("controlv2").setValue(false);
-        data.child("control").addValueEventListener(new ValueEventListener() {
-
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                int c = Integer.parseInt(dataSnapshot.getValue().toString());
-                switch (c){
-                    case 0:
-                        Log.e("switch",0+"");
-                        Intent Centroid_i = new Intent(getApplicationContext(), CentroidCreate.class);
-                        startService(Centroid_i);
-
-                        break;
-                    case 1:
-                        Log.e("switch",1+"");
-                        Intent i = new Intent(getApplicationContext(), CentroidCreate.class);
-                        stopService(i);
-
-                        DatabaseReference d2 = FirebaseDatabase.getInstance().getReference();
-                        d2.child("app").child("control").setValue(2);
-                        Log.e("Kmean Count",count[0]+"");
-                        d2.child("Kmean").child("00group").setValue(count[0]++);
-
-                        new DistanceComputeAsyn().execute();
-                        break;
-                    case 2:
-                        Log.e("switch",2+"");
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
-
-        data.child("controlv2").addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                if (dataSnapshot.getValue().toString().equals("true")){
-                    data.child("control").setValue(1);
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
-
+        boolean c1 = false;
         final String device = DeviceName.getDeviceName();
         DeviceName.with(getApplicationContext()).request(new DeviceName.Callback() {
             @Override
@@ -352,6 +265,156 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         androidver();
+        List<Double> distance_compare = new ArrayList<Double>();
+
+        DBManager db = new DBManager(getApplicationContext());
+
+        db.copyTable();
+        Log.e("minmaxCount", String.valueOf(db.getNodesCount("min_max_temp")));
+
+        for (Node i:db.getAllNode("min_max_temp")){
+            double Dis = i.getDistance();
+            distance_compare.add(Dis);
+        }
+
+        int step = (int) (Math.sqrt(Gmax(distance_compare))/2);
+        double last = Gmax(distance_compare);
+        double initial_step = Gmin(distance_compare);
+
+        int element_require = 1253/n;
+        List<ListC>  group = new ArrayList<ListC>();
+
+        double Radius = initial_step;
+        while (Radius<=last){
+            Log.e("Radius", String.valueOf(Radius)+" - "+db.getNodesCount("min_max_temp"));
+            int user1 = 0;
+            List<FilterC> filter = new ArrayList<FilterC>();
+            while(user1<1253){
+//                Log.d("user1", String.valueOf(user1));
+                List<Integer> user2_per1 = new ArrayList<Integer>();
+                for (Node i : db.Querry(user1)){
+                    if (i.getDistance()<=Radius){
+                        user2_per1.add(i.getUser_2());
+                    }
+                }
+                FilterC filterC = new FilterC();
+                filterC.setUser1(user1);
+                filterC.setSize(user2_per1.size());
+                filterC.setUser2_per1(user2_per1);
+
+                filter.add(filterC);
+                user1++;
+            }
+
+            Node objUser = maxL(filter);
+            int maxUser = objUser.getMax();
+            int user1_Discussion = objUser.getUser_1();
+            List<Integer> arr = objUser.getArrayList();
+
+            if (maxUser < element_require) {
+                Radius = Radius + initial_step;
+                Log.e("Status","Not found increase Radius to "+Radius);
+            }
+            else{
+                Log.e("Status","Group found, User Discussion is "+user1_Discussion);
+                ListC listC = new ListC();
+                listC.setUser1(user1_Discussion);
+                listC.setRadius(Radius);
+                listC.setUser2(arr);
+
+                group.add(listC);
+                for (int i: arr){
+                    db.Delete_user2(i);
+                }
+            }
+        }
+
+        for (ListC i: group){
+            Log.e("user1", String.valueOf(i.getUser1())+" Radius: "+i.getRadius());
+            Log.e("user2_per1", i.getUser2()+"");
+        }
+
+        if (c1)
+            databaseReference.child("habitatMatrix").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                for (DataSnapshot zone: dataSnapshot.getChildren()){
+                    int current_user = Integer.parseInt(zone.getKey().toString());
+                    int c = (int) zone.getChildrenCount();
+                    int i = 0;
+                    int cenPos[] = new int[c];
+                    double cenVal[] = new double[c];
+                    for (DataSnapshot zoneDetail: zone.getChildren()){
+                        cenPos[i] = Integer.parseInt(zoneDetail.getKey().toString());
+                        cenVal[i] = Double.parseDouble(zoneDetail.getValue().toString());
+                    }
+
+                    DistanceC distanceC= new DistanceC(current_user,cenPos,cenVal);
+                    new DistanceComputeAsyn().execute(distanceC);
+                    i++;
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    private Node maxL(List<FilterC> li){
+        int max = 0;
+        int user1 = 0;
+        List<Integer> user2_per1 = new ArrayList<Integer>();
+
+        for (int i =0;i<li.size();i++){
+            if (li.get(i).getSize()>max){
+                max = li.get(i).getSize();
+                user1 = li.get(i).getUser1();
+                user2_per1 = li.get(i).getUser2_per1();
+            }
+        }
+
+        Node node = new Node();
+        node.setUser_1(user1);
+        node.setMax(max);
+        node.setArrayList(user2_per1);
+
+        return node;
+    }
+
+    private double Gmin(List<Double> l){
+        double min = 0;
+        for (double i:l){
+            if (i!=0){
+                min = i;
+                break;
+            }
+        }
+
+        for(double i: l){
+            if (i<min && i!=0){
+                min = i;
+            }
+        }
+        return min;
+    }
+
+    private double Gmax(List<Double> l){
+        double max = 0;
+        for (double i:l){
+            if (i!=0){
+                max = i;
+                break;
+            }
+        }
+
+        for(double i: l){
+            if (i>max && i!=0){
+                max = i;
+            }
+        }
+        return max;
     }
 
     private void androidver(){
@@ -386,7 +449,7 @@ public class MainActivity extends AppCompatActivity {
         return deviceId;
     }
 
-    public class DistanceComputeAsyn extends AsyncTask<String,Integer,String>{
+    public class DistanceComputeAsyn extends AsyncTask<DistanceC,Integer,String> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
@@ -395,88 +458,68 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
-            Log.e("DistanceComputeAsyn","DONE");
         }
 
         @Override
-        protected String doInBackground(String... params) {
-            Log.i("DistanceComputeAsyn","Running");
+        protected String doInBackground(DistanceC... params) {
+            final int current_user = params[0].getCurrent_user();
+            final int cenPos[] = params[0].getCenPos();
+            final double cenVal[] = params[0].getCenVal();
+
             final DatabaseReference database = FirebaseDatabase.getInstance().getReference();
             database.addListenerForSingleValueEvent(new ValueEventListener() {
-                int cenPos[];
-                int cenVal[] ;
 
-                int objPos[] ;
-                int objVal[] ;
-
-                Double simCombine[][];
+                int objPos[];
+                double objVal[];
 
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
-                    int nx = (int) dataSnapshot.child("Kmean/centroid").getChildrenCount();
-                    int ny = (int) dataSnapshot.child("habitatMatrix").getChildrenCount();
-                    List<Double> log;
-                    simCombine = new Double [nx][ny];
-                    int x =0;
-                    for (DataSnapshot zone: dataSnapshot.child("Kmean/centroid").getChildren()){
-                        cenPos = new int[(int) zone.getChildrenCount()];
-                        cenVal = new int[(int) zone.getChildrenCount()];
-                        log = new ArrayList<Double>();
-                        int i =0, y=0;
-                        for(DataSnapshot zoneDetail: zone.getChildren()){
-                            cenPos[i] = Integer.parseInt(zoneDetail.getKey().toString());
-                            cenVal[i++] = Integer.parseInt(zoneDetail.getValue().toString());
+                    for (DataSnapshot zone : dataSnapshot.child("habitatMatrixv2").getChildren()) {
+                        int user_2 = Integer.parseInt(zone.getKey().toString());
+                        int size1 = (int) zone.getChildrenCount();
+                        objPos = new int[size1];
+                        objVal = new double[size1];
+                        int j = 0;
+                        for (DataSnapshot zoneDetail : zone.getChildren()) {
+                            objPos[j] = Integer.parseInt(zoneDetail.getKey().toString());
+                            objVal[j++] = Double.parseDouble(zoneDetail.getValue().toString());
                         }
 
-                        for (DataSnapshot zone1: dataSnapshot.child("habitatMatrix").getChildren()){
-                            objPos = new int[(int) zone1.getChildrenCount()];
-                            objVal = new int[(int) zone1.getChildrenCount()];
-                            int j =0;
-                            for (DataSnapshot zoneDetail: zone1.getChildren()){
-                                objPos[j] = Integer.parseInt(zoneDetail.getKey().toString());
-                                objVal[j++] = Integer.parseInt(zoneDetail.getValue().toString());
-                            }
+                        double sim = similarityDistance(cenVal, cenPos, objVal, objPos);
 
-                            if (cenVal != null && cenPos !=null){
-                                Double sim = similarityDistance(cenVal,cenPos,objVal,objPos);
-                                simCombine[x][y++] = sim;
-                                //log.add(sim);
-                                //Log.i("System.out","Similarity of user " + zone.getKey() +" with user "+zone1.getKey()+" equal "+ String.valueOf(sim));
-                            }
-                        }
-                        //Log.e("ENDLOOP",x+" : " +simCombine[x].length+ " ------------------------------------------------------------------");
-                        x++;
+                        Node node = new Node(current_user,user_2,sim);
+                        DBManager db = new DBManager(getApplicationContext(),node);
+                        db.addNode(node);
                     }
-                    groupCen(simCombine);
                 }
 
                 @Override
                 public void onCancelled(DatabaseError databaseError) {
-                    Log.e("Error",databaseError+"");
+                    Log.e("Error", databaseError + "");
                 }
             });
             return null;
         }
 
-        private int[][] Matrix(){
+        private int[][] Matrix() {
 
             final int m[][] = new int[nUser][nMusic];
-            DatabaseReference database = FirebaseDatabase.getInstance().getReference("habitatMatrix");
+            DatabaseReference database = FirebaseDatabase.getInstance().getReference("habitatMatrixv2");
             database.addListenerForSingleValueEvent(new ValueEventListener() {
-                int i =0;
+                int i = 0;
+
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
-                    for (DataSnapshot zone: dataSnapshot.getChildren()){
+                    for (DataSnapshot zone : dataSnapshot.getChildren()) {
                         int row = Integer.parseInt(zone.getKey().toString());
-                        for (DataSnapshot zonedetail: zone.getChildren()){
+                        for (DataSnapshot zonedetail : zone.getChildren()) {
                             int column = Integer.parseInt(zonedetail.getKey().toString());
                             int value = Integer.parseInt(zonedetail.getValue().toString());
-                            for (int j = i; j<column; j++){
+                            for (int j = i; j < column; j++) {
                                 m[row][j] = 0;
                             }
                             m[row][column] = value;
-                            //Log.i("Matrix","m["+row+"]["+column+"] = "+value);
-                            i = column+1;
+                            i = column + 1;
                         }
                     }
                 }
@@ -489,269 +532,52 @@ public class MainActivity extends AppCompatActivity {
             return m;
         }
 
-        private void patchValue(int m[],String s){
-            List<Integer> h = new ArrayList<Integer>();
-            for (int i = 0;i<m.length;i++ )
-                h.add(m[i]);
-            Log.e("pathValue",s+" | size ="+h.size());
-            Log.d("m", String.valueOf(h));
-        }
+        private double similarityDistance(double centVal[], int centPos[], double objVal[], int objPos[]) {
+            double tag = 0, cenX = 0, cenY = 0, sol = 0;
 
-
-        private Double similarityDistance(int centVal[],int centPos[], int objVal[],int objPos[]){
-            float tag =0, cenX=0,cenY=0,sol =0;
-            List <Integer> cenval = new ArrayList<Integer>();
-            List <Integer> cenpos = new ArrayList<Integer>();
-            List <Integer> objval = new ArrayList<Integer>();
-            List <Integer> objpos = new ArrayList<Integer>();
-            Log.e("end","____________________________________________________________________");
-            patchValue(centPos,"cenpos");
-            patchValue(objPos,"objpos");
-            patchValue(centVal,"cenval");
-            patchValue(objVal,"objval");
-
-            if (centPos.length>=objPos.length) {
+            if (centPos.length >= objPos.length) {
                 for (int i = 0; i < centPos.length; i++) {
-                    if (i<objPos.length) {
-                        for (int j =0;j< objPos.length;j++) {
+                    if (i < objPos.length) {
+                        for (int j = 0; j < objPos.length; j++) {
                             if (centPos[i] == objPos[j]) {
-                                Log.d("tag1", "cenval[" + i + "]-objval[" + j + "]");
-                                tag = tag + (centVal[i] - objVal[j])*(centVal[i] - objVal[j]);
+                                tag = tag + (centVal[i] - objVal[j]) * (centVal[i] - objVal[j]);
                                 break;
                             }
 
-                            if (j == objPos.length-1){
-                                cenX = cenX + centVal[i]*centVal[i];
-                                cenY = cenY + objVal[i]*objVal[i];
-                                //Log.d("tag11", i+ " cenX = "+cenX+", cenY = "+cenY);
+                            if (j == objPos.length - 1) {
+                                cenX = cenX + centVal[i] * centVal[i];
+                                cenY = cenY + objVal[i] * objVal[i];
                             }
                         }
                     } else {
-                        cenX = cenX + centVal[i]*centVal[i];
-                        //cenY = objVal[i];
-                        //Log.d("tag1", "cenX = "+cenX+", cenY = "+cenY);
+                        cenX = cenX + centVal[i] * centVal[i];
                     }
-                    //Log.e("sol", sol+" + "+tag+" + "+cenX+" + "+cenY);
-                    sol = tag + cenX + cenY ;
-                    //Log.e("sol",sol+"");
+                    sol = tag + cenX + cenY;
                 }
-            }else{
+            } else {
                 for (int i = 0; i < objPos.length; i++) {
-                    if (i< centPos.length) {
-                        for (int j =0;j< centPos.length;j++) {
+                    if (i < centPos.length) {
+                        for (int j = 0; j < centPos.length; j++) {
                             if (centPos[j] == objPos[i]) {
-                                Log.d("tag2", "cenval[" + j + "]-objval[" + i + "]");
-                                tag = tag + (centVal[j] - objVal[i])*(centVal[j] - objVal[i]);
+                                tag = tag + (centVal[j] - objVal[i]) * (centVal[j] - objVal[i]);
 
                                 break;
                             }
 
-                            if (j == centPos.length-1){
-                                cenX = cenX + centVal[i]*centVal[i];
-                                cenY = cenY + objVal[i]*objVal[i];
-                                //Log.d("tag21", i+" cenX = "+cenX+", cenY = "+cenY);
+                            if (j == centPos.length - 1) {
+                                cenX = cenX + centVal[i] * centVal[i];
+                                cenY = cenY + objVal[i] * objVal[i];
                             }
                         }
                     } else {
-                        //cenX = centVal[i];
-                        cenY = cenY + objVal[i]*objVal[i];
-                        //Log.d("tag2", i+" cenX = "+cenX+", cenY = "+cenY);
+                        cenY = cenY + objVal[i] * objVal[i];
                     }
-                    //Log.e("sol", sol+" + "+tag+" + "+cenX+" + "+cenY);
-                    sol = tag + cenX + cenY ;
-                    //Log.e("sol",sol+"");
-                }
-            }
-            return (Double) Math.sqrt(sol);
-        }
-
-        private void groupCen(Double m[][]){
-            Log.e("groupCen","Running...");
-            final int combine[][] = new int [n][nUser];
-            Double[] checkm;
-            for (int i =0; i < n;i++ ) {
-                for (int j = 0; j < nUser; j++) {
-                    combine[i][j] = 0;
+                    sol = tag + cenX + cenY;
                 }
             }
 
-            Log.e("SYS","--------------------------------------------------");
-            Log.e("SYS","m[0].length:"+m[0].length+" n:"+n);
-            Log.e("SYS","--------------------------------------------------");
-
-            for (int i =0 ; i< m[0].length;i++){
-                checkm = new Double[n];
-                for (int j =0; j< n; j++){
-                    checkm[j] = m[j][i];
-                }
-                combine[smallestVal(checkm)][i] = 1;
-                Log.i("System.out","combine["+smallestVal(checkm)+"]["+i+"])");
-            }
-            Log.e("Balance: ",balance(combine)+"");
-
-            databaseReference.child("Kmean").child("balance").setValue(balance(combine));
-
-                if (!balance(combine)) {
-                    int habitat[][] = new int [nUser][nMusic];
-                    habitat = Matrix();
-
-                    final Timer timer = new Timer();
-                    final int[][] finalHabitat = habitat;
-                    timer.schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            databaseReference.child("Kmean").child("centroid").removeValue();
-                            databaseReference.child("app").child("controlv2").setValue(false);
-                            for (int i =0; i<n;i++) {
-                                final List<Integer> sumMatrix = new ArrayList<Integer>();
-                                for (int j = 0; j < nUser; j++){
-                                    if (combine[i][j] == 1){
-                                        sumMatrix.add(j);
-                                    }
-                                }
-                                Log.e("sumMatrix",i+": "+sumMatrix+"");
-                                timer.schedule(new PushParameter(i,sumMatrix,finalHabitat),5000);
-                            }
-                        }
-                    },5000);
-                }
-        }
-
-        private boolean balance(int m[][]){
-            Log.e("balance","Running...");
-            boolean k = false;
-            int temp[] = new int [nUser];
-            for (int i =0; i < n; i++){
-                int sum =0;
-                for (int j = 0;j < nUser;j++){
-                    sum += m[i][j];
-                }
-                //Log.d("Balance number",i+" -> "+sum);
-                temp[i]= sum;
-            }
-
-            int min = temp[0], max = temp[0];
-
-            for (int i =0; i< temp.length;i++){
-                if (temp[i]<min) {
-                    min = temp[i];
-                    break;
-                }
-
-                if (temp[i]>max){
-                    max = temp[i];
-                    break;
-                }
-
-                if (i == temp.length-1 && max == min){
-                    k = true;
-                }
-            }
-            return k;
-        }
-
-        private int smallestVal(Double m[]){
-            Log.e("smallestVal","Running...");
-            Double sma = m[0];
-            int pos =0;
-            for (int i =1;i<m.length;i++){
-                if (m[i] < sma) {
-                    sma = m[i];
-                    pos = i;
-                }
-            }
-            return pos;
+            double s = Math.sqrt(sol);
+            return (double) Math.round(s * 10000) / 10000;
         }
     }
-
-    class PushParameter extends TimerTask {
-
-        int n = 25;
-        int nMusic =  13369;
-        int nUser = 1259;
-
-        private final int i;
-        private List<Integer> sumMatrix = new ArrayList<Integer>();
-        private int[][] finalHabitat = new int[nUser][nMusic];
-
-        PushParameter ( int i ,List<Integer> sumMatrix, int[][] finalHabitat) {
-            this.i = i;
-            this.sumMatrix = sumMatrix;
-            this.finalHabitat = finalHabitat;
-        }
-
-        public void run() {
-            //Do stuff
-            if (sumMatrix.size()>1){
-                System.out.println("sumMatrix.size()>1");
-                final DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
-
-                databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        final int arr[] = new int [nMusic];
-
-                        for (int temp = 0; temp< nMusic; temp++){
-                            arr[temp] = 0;
-                        }
-                        int k =0;
-                        for (int j : sumMatrix){
-                            k++;
-//                            Log.e("List sumMatrix",j+"");
-                            for (int temp = 0; temp< finalHabitat[j].length; temp++){
-                                arr[temp] = arr[temp] + finalHabitat[j][temp];
-                            }
-
-                            for(int temp =0; temp< finalHabitat[j].length; temp++)
-                            if (arr[temp]!=0) {
-                                //System.out.println("sumMatrix="+j+", arr["+temp+"]="+arr[temp]);
-                                if (temp == finalHabitat[j].length-1 && k == sumMatrix.size()){
-                                    databaseReference.child("Kmean").child("02lastuser").setValue(temp);
-                                }
-                            }
-                        }
-
-                        Map<String,Integer> time = new HashMap<>();
-
-                        for (int temp =0; temp < nMusic; temp++){
-                            if (arr[temp]!=0) time.put(String.valueOf(temp),arr[temp]);
-                        }
-
-                        databaseReference.child("Kmean").child("centroid").child(String.valueOf(i)).setValue(time);
-                    }
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-                    }
-                });
-            }else {
-                System.out.println("sumMatrix.size()<=1");
-                final DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
-                databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
-                    int k =0;
-                    int k1 =0;
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        for (int j : sumMatrix){
-                            k++;
-                            for (DataSnapshot zone: dataSnapshot.child("habitatMatrix").child(String.valueOf(j)).getChildren()){
-                                databaseReference.child("Kmean").child("centroid").child(String.valueOf(i)).child(zone.getKey()).setValue(zone.getValue());
-                                //Log.i("ELse",finalI1+" : "+zone.getKey()+" / "+zone.getValue());
-                                if (k == sumMatrix.size()){
-                                    int num = (int) dataSnapshot.child("habitatMatrix").child(String.valueOf(j)).getChildrenCount();
-                                    k1++;
-                                    if (num == k1) databaseReference.child("Kmean").child("02lastuser").setValue(zone.getKey());
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-
-                    }
-                });
-            }
-        }
-    }
-
 }

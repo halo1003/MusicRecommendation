@@ -32,13 +32,13 @@ public class FirebaseEventListener extends Service {
         database.child("Kmean").child("centroid").addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                Log.i("System.out","Add "+dataSnapshot.getKey()+" to data after "+ s);
+                //Log.i("System.out","Add "+dataSnapshot.getKey()+" to data after "+ s);
 
                 if (dataSnapshot.getKey().toString().equals("24"))  {
                     database.child("Kmean").child("centroid").child("24").addChildEventListener(new ChildEventListener() {
                         @Override
                         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                            Log.e("System.out","Add position "+dataSnapshot.getKey()+" to database after "+ s);
+                            //Log.e("System.out","Add position "+dataSnapshot.getKey()+" to database after "+ s);
                             if (dataSnapshot.getKey().toString() == lastUser[0]){
                                 Log.e("FirebaseEvent:Control",1+"");
                                 database.child("app").child("controlv2").setValue(true);
@@ -93,7 +93,7 @@ public class FirebaseEventListener extends Service {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 lastUser[0] = dataSnapshot.getValue().toString();
-                Log.e("LastUser changed",lastUser[0]+"");
+//                Log.e("LastUser changed",lastUser[0]+"");
             }
 
             @Override
