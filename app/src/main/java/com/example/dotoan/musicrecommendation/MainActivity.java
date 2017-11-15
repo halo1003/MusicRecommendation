@@ -313,19 +313,11 @@ public class MainActivity extends AppCompatActivity {
             List<Integer> arr = objUser.getArrayList();
 
             if (maxUser < element_require) {
-                count++;
-                if (count == 3){
-                    Radius = Radius + db.Min("min_max_temp");
-                    count = 0;
-                }else{
-                    Radius = Radius + step;
-                }
-
-                Log.e("Status","Not found, Increase Radius to "+Radius);
+                double dbMin = db.Min("min_max_temp");
+                Radius = Radius + dbMin;
+                Log.e("Status","Not found,dbMin = "+dbMin+", Increase Radius to "+Radius);
             }
             else{
-                count = 0;
-                Log.e("Status","Group found, User Discussion is "+user1_Discussion);
                 ListC listC = new ListC();
                 listC.setUser1(user1_Discussion);
                 listC.setRadius(Radius);
@@ -336,12 +328,15 @@ public class MainActivity extends AppCompatActivity {
                     db.Delete_user2(i);
                 }
                 Radius = Radius + initial_step;
-                Log.e("Status","Radius update to "+Radius);
+                Log.e("Status","Group found, User Discussion is "+user1_Discussion+" Step reset, Radius update to "+Radius);
             }
         }
 
-        for (Node i: db.cQuerry()){
-            Log.i("cQuerry",i.getID()+"|"+i.getUser_1()+"|"+i.getUser_2()+"|"+i.getDistance());
+        databaseReference.child("Relative Group").removeValue();
+        List<Node> cquerry  = db.cQuerry();
+        for (Node i: cquerry){
+            databaseReference.child("Relative Group").child("Unknown group").child("Size").setValue(cquerry.size());
+            databaseReference.child("Relative Group").child("Unknown group").child("Array").setValue(i.getUser_1());
         }
 
         for (ListC i: group){

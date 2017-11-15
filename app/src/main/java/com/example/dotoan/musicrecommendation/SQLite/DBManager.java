@@ -113,6 +113,7 @@ public class DBManager extends SQLiteOpenHelper {
     public void copyTable(){
         String sqlDrop = "DROP TABLE IF EXISTS "+TBname_temp;
         String sqlQuerry = "create table "+TBname_temp+" as select * from "+TBname;
+        String sqlDelete = "DELETE FROM "+TBname_temp+" WHERE "+ user_1+"="+user_2;
 
         SQLiteDatabase db = this.getWritableDatabase();
 
@@ -121,6 +122,10 @@ public class DBManager extends SQLiteOpenHelper {
 
         db.execSQL(sqlQuerry);
         Log.e("DBmanager","Duplicate TB success");
+
+        db.execSQL(sqlDelete);
+        Log.e("DBmanager","Delete Zero success");
+        db.close();
     }
 
     public void Delete_user2(int temp){
@@ -143,7 +148,7 @@ public class DBManager extends SQLiteOpenHelper {
 
     public List<Node> cQuerry(){
         List<Node> li = new ArrayList<Node>();
-        String selectQuery = "SELECT * FROM "+TBname_temp;
+        String selectQuery = "SELECT "+user_1+" FROM "+TBname_temp+" GROUP BY "+user_1;
 
         SQLiteDatabase db = this.getWritableDatabase();
         Cursor cursor = db.rawQuery(selectQuery, null);
@@ -151,10 +156,7 @@ public class DBManager extends SQLiteOpenHelper {
         if (cursor.moveToFirst()) {
             do {
                 Node node = new Node();
-                node.setID(cursor.getInt(0));
-                node.setUser_1(cursor.getInt(1));
-                node.setUser_2(cursor.getInt(2));
-                node.setDistance(cursor.getDouble(3));
+                node.setUser_1(cursor.getInt(0));
                 li.add(node);
             } while (cursor.moveToNext());
         }
