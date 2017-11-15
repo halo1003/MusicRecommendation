@@ -131,6 +131,38 @@ public class DBManager extends SQLiteOpenHelper {
         db.close();
     }
 
+    public int Min (String temp){
+        String selectQuery = "SELECT MIN(NULLIF("+distance+",0)) FROM "+TBname_temp;
+
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
+        cursor.moveToFirst();
+        db.close();
+        return cursor.getInt(0);
+    }
+
+    public List<Node> cQuerry(){
+        List<Node> li = new ArrayList<Node>();
+        String selectQuery = "SELECT * FROM "+TBname_temp;
+
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
+
+        if (cursor.moveToFirst()) {
+            do {
+                Node node = new Node();
+                node.setID(cursor.getInt(0));
+                node.setUser_1(cursor.getInt(1));
+                node.setUser_2(cursor.getInt(2));
+                node.setDistance(cursor.getDouble(3));
+                li.add(node);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+        return li;
+    }
+
     public List<Node> Querry(int temp){
         List<Node> li = new ArrayList<Node>();
         String selectQuery = "SELECT * FROM "+TBname_temp+" WHERE "+user_1+"="+temp;

@@ -277,7 +277,6 @@ public class MainActivity extends AppCompatActivity {
             distance_compare.add(Dis);
         }
 
-        int step = (int) (Math.sqrt(Gmax(distance_compare))/2);
         double last = Gmax(distance_compare);
         double initial_step = Gmin(distance_compare);
 
@@ -285,6 +284,8 @@ public class MainActivity extends AppCompatActivity {
         List<ListC>  group = new ArrayList<ListC>();
 
         double Radius = initial_step;
+        double step = initial_step;
+        int count = 0;
         while (Radius<=last){
             Log.e("Radius", String.valueOf(Radius)+" - "+db.getNodesCount("min_max_temp"));
             int user1 = 0;
@@ -312,10 +313,18 @@ public class MainActivity extends AppCompatActivity {
             List<Integer> arr = objUser.getArrayList();
 
             if (maxUser < element_require) {
-                Radius = Radius + initial_step;
-                Log.e("Status","Not found increase Radius to "+Radius);
+                count++;
+                if (count == 3){
+                    Radius = Radius + db.Min("min_max_temp");
+                    count = 0;
+                }else{
+                    Radius = Radius + step;
+                }
+
+                Log.e("Status","Not found, Increase Radius to "+Radius);
             }
             else{
+                count = 0;
                 Log.e("Status","Group found, User Discussion is "+user1_Discussion);
                 ListC listC = new ListC();
                 listC.setUser1(user1_Discussion);
@@ -326,13 +335,22 @@ public class MainActivity extends AppCompatActivity {
                 for (int i: arr){
                     db.Delete_user2(i);
                 }
+                Radius = Radius + initial_step;
+                Log.e("Status","Radius update to "+Radius);
             }
         }
 
-        for (ListC i: group){
-            Log.e("user1", String.valueOf(i.getUser1())+" Radius: "+i.getRadius());
-            Log.e("user2_per1", i.getUser2()+"");
+        for (Node i: db.cQuerry()){
+            Log.i("cQuerry",i.getID()+"|"+i.getUser_1()+"|"+i.getUser_2()+"|"+i.getDistance());
         }
+
+        for (ListC i: group){
+            databaseReference.child("Relative Group").child(String.valueOf(i.getUser1())).child("Radius").setValue(i.getRadius());
+            databaseReference.child("Relative Group").child(String.valueOf(i.getUser1())).child("Array").child("Size").setValue(i.getUser2().size());
+            databaseReference.child("Relative Group").child(String.valueOf(i.getUser1())).child("Array").child("Value").setValue(i.getUser2());
+        }
+
+
 
         if (c1)
             databaseReference.child("habitatMatrix").addListenerForSingleValueEvent(new ValueEventListener() {
