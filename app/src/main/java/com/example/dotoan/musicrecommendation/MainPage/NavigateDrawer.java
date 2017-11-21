@@ -1,9 +1,14 @@
 package com.example.dotoan.musicrecommendation.MainPage;
 
+import android.app.Fragment;
+import android.app.FragmentManager;
 import android.content.Intent;
+import android.content.SearchRecentSuggestionsProvider;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -13,51 +18,27 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.dotoan.musicrecommendation.MainActivity;
 import com.example.dotoan.musicrecommendation.R;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
 
-public class NavigationActivity extends AppCompatActivity
+public class NavigateDrawer extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
-
-    TextView txtvUsername;
-    TextView txtvEmail;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_navigation);
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        View headerView = navigationView.getHeaderView(0);
-
-        ImageView img = (ImageView) headerView.findViewById(R.id.imageView);
-
-        img.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FirebaseAuth.getInstance().signOut();
-                startActivity(new Intent(getApplicationContext(), MainActivity.class));
-            }
-        });
-
-        txtvUsername = (TextView)headerView.findViewById(R.id.username);
-        txtvEmail = (TextView)headerView.findViewById(R.id.email);
-
+        setContentView(R.layout.activity_navigate_drawer);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-
-
-        txtvEmail.setText(user.getEmail());
-        txtvUsername.setText(user.getDisplayName());
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -71,8 +52,40 @@ public class NavigationActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.setDrawerListener(toggle);
+        drawer.addDrawerListener(toggle);
         toggle.syncState();
+
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+
+        navigationView.setNavigationItemSelectedListener(this);
+        View header=navigationView.getHeaderView(0);
+
+        /*View view=navigationView.inflateHeaderView(R.layout.nav_header_main);*/
+        FirebaseAuth fAuth = FirebaseAuth.getInstance();
+
+        SharedPreferences sp1=this.getSharedPreferences("Login", MODE_PRIVATE);
+        String _id = sp1.getString("_id", null);
+        String id = sp1.getString("id",null);
+
+        Gson gson = new Gson();
+        String arrayListString = sp1.getString("list", null);
+        Type type = new TypeToken<ArrayList<HashMap<String,String>>>() {}.getType();
+        ArrayList<HashMap<String,String>> arrayList = gson.fromJson(arrayListString, type);
+
+        Log.e("ARRAY",arrayList+"");
+
+
+
+        TextView name = (TextView)header.findViewById(R.id.name);
+        TextView email = (TextView)header.findViewById(R.id.email);
+
+        if (_id!=null){
+            email.setText(_id);
+            name.setText(id);
+        }else if (fAuth!=null){
+            name.setText(fAuth.getCurrentUser().getDisplayName());
+            email.setText(fAuth.getCurrentUser().getEmail());
+        }
 
         navigationView.setNavigationItemSelectedListener(this);
     }
@@ -90,7 +103,7 @@ public class NavigationActivity extends AppCompatActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.navigation, menu);
+        getMenuInflater().inflate(R.menu.navigate_drawer, menu);
         return true;
     }
 
@@ -114,14 +127,26 @@ public class NavigationActivity extends AppCompatActivity
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
+        FragmentManager fragmentManager = getFragmentManager();
 
-        if (id == R.id.nav_camera) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
+        if (id == R.id.nav_user) {
+            fragmentManager.beginTransaction().replace(R.id.content_frame,new AdminFragment()).commit();
 
-        } else if (id == R.id.nav_slideshow) {
+        } else if (id == R.id.nav_normal) {
+            fragmentManager.beginTransaction().replace(R.id.content_frame,new NormalFragment()).commit();
 
-        } else if (id == R.id.nav_manage) {
+        } else if (id == R.id.nav_signout) {
+            FirebaseAuth fAuth = FirebaseAuth.getInstance();
+            SharedPreferences sp1=this.getSharedPreferences("Login", MODE_PRIVATE);
+            String _id = sp1.getString("_id",null);
+            if (fAuth!=null) fAuth.signOut();
+            if (_id!=null) sp1.edit().clear().apply();
+
+            Intent i = new Intent(getApplicationContext(), MainActivity.class);
+            startActivity(i);
+
+        } else if (id == R.id.nav_database_fix) {
+            fragmentManager.beginTransaction().replace(R.id.content_frame,new DatabasefixFragment()).commit();
 
         } else if (id == R.id.nav_share) {
 

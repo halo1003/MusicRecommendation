@@ -10,15 +10,9 @@ import java.util.List;
 public class ListC {
     int user1;
     double radius;
-    List<Integer> user2 = new ArrayList<Integer>();
+    List<ValueC> user2 = new ArrayList<ValueC>();
 
     public ListC() {
-    }
-
-    public ListC(List<Integer> user, int user1, double radius) {
-        this.user1 = user1;
-        this.user2 = user2;
-        this.radius = radius;
     }
 
     public int getUser1() {
@@ -37,11 +31,11 @@ public class ListC {
         this.radius = radius;
     }
 
-    public List<Integer> getUser2() {
+    public List<ValueC> getUser2() {
         return user2;
     }
 
-    public void setUser2(List<Integer> user2) {
+    public void setUser2(List<ValueC> user2) {
         this.user2 = user2;
     }
 }

@@ -20,7 +20,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.dotoan.musicrecommendation.LoginActivity;
-import com.example.dotoan.musicrecommendation.MainPage.NavigationActivity;
 import com.example.dotoan.musicrecommendation.R;
 import com.example.dotoan.musicrecommendation.SignUpActivity;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -194,8 +193,8 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     txtv.setText("Waiting ...("+ finalI +"/3)");
                     if (finalI == 3) {
-                        Intent nav_i = new Intent(getApplicationContext(), NavigationActivity.class);
-                        startActivity(nav_i);
+                        //Intent nav_i = new Intent(getApplicationContext(), Na.class);
+                        //startActivity(nav_i);
                     }
                 }
             }, 1000);

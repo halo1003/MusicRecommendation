@@ -18,6 +18,10 @@ import android.widget.Toast;
 import com.dd.morphingbutton.MorphingButton;
 import com.example.dotoan.musicrecommendation.signup.fragment.fragment_email_pass;
 import com.example.dotoan.musicrecommendation.signup.fragment.fragment_username;
+import com.github.johnpersano.supertoasts.library.Style;
+import com.github.johnpersano.supertoasts.library.SuperActivityToast;
+import com.github.johnpersano.supertoasts.library.SuperToast;
+import com.github.johnpersano.supertoasts.library.utils.PaletteUtils;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
@@ -158,7 +162,15 @@ public class SignUpActivity extends FragmentActivity implements fragment_email_p
     }
 
     protected void Registration(String email,String password){
-        Toast.makeText(getApplicationContext(), "Please wait...", Toast.LENGTH_SHORT).show();
+
+        final SuperActivityToast superActivityToast = new SuperActivityToast(SignUpActivity.this, Style.TYPE_PROGRESS_CIRCLE);
+
+            superActivityToast.setText("Creating...");
+            superActivityToast.setIndeterminate(true);
+            superActivityToast.setProgressIndeterminate(true);
+            superActivityToast.setColor(PaletteUtils.getSolidColor(PaletteUtils.MATERIAL_DEEP_ORANGE));
+            superActivityToast.show();
+
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
@@ -183,6 +195,7 @@ public class SignUpActivity extends FragmentActivity implements fragment_email_p
                                         @Override
                                         public void onComplete(@NonNull Task<Void> task) {
                                             if (task.isSuccessful()) {
+                                                superActivityToast.dismiss();
                                                 txtvError.setTextColor(getResources().getColor(R.color.colorGreen));
                                                 txtvError.setText("Success: Wellcome "+username);
                                                 txtvError.setVisibility(View.VISIBLE);
@@ -191,6 +204,7 @@ public class SignUpActivity extends FragmentActivity implements fragment_email_p
                                         }
                                     });
                         } else {
+                            superActivityToast.dismiss();
                             signup_action = 1;
                             morphToFail(btnSubmit);
                             txtvError.setText(task.getException().getMessage().toString());

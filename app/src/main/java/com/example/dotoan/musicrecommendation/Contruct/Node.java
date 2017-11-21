@@ -13,16 +13,16 @@ public class Node {
     int user_2;
     double distance;
     int max;
-    List<Integer> arrayList = new ArrayList<Integer>();
+    List<ValueC> arrayList = new ArrayList<ValueC>();
 
     public Node() {
     }
 
-    public List<Integer> getArrayList() {
+    public List<ValueC> getArrayList() {
         return arrayList;
     }
 
-    public void setArrayList(List<Integer> arrayList) {
+    public void setArrayList(List<ValueC> arrayList) {
         this.arrayList = arrayList;
     }
 

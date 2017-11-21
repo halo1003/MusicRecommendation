@@ -33,16 +33,24 @@
         android:layout_above="@+id/linearLayout"
         android:orientation="vertical"
         android:layout_centerHorizontal="true">
-        <ProgressBar
+
+        <com.github.ybq.android.spinkit.SpinKitView
+            xmlns:app="http://schemas.android.com/apk/res-auto"
             android:id="@+id/spinner"
+            style="@style/SpinKitView.FadingCircle"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            app:SpinKit_Color="@color/colorAccent" />
+
         <TextView
             android:id="@+id/processText"
             android:textColor="@color/colorWhite"
             android:textStyle="bold"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_weight="1"/>
     </LinearLayout>
 
     <LinearLayout

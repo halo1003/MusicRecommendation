@@ -49,12 +49,6 @@
             android:name=".services.UpdateService"
             android:enabled="true"
             android:exported="true" />
-
-        <activity
-            android:name=".MainPage.NavigationActivity"
-            android:label="@string/title_activity_navigation"
-            android:theme="@style/AppTheme.NoActionBar" />
-
         <service
             android:name=".services.CentroidCreate"
             android:enabled="true"
@@ -62,7 +56,19 @@
         <service
             android:name=".services.FirebaseEventListener"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
+
+        <activity
+            android:name=".MainPage.NavigateDrawer"
+            android:label="@string/title_activity_navigate_drawer"
+            android:theme="@style/AppTheme.NoActionBar" />
+
+        <service
+            android:name=".IntentService.IntentServiceClusterData"
+            android:exported="false" />
+        <service
+            android:name=".IntentService.IntentServiceDistance"
+            android:exported="false"></service>
     </application>
 
 </manifest>

@@ -22,6 +22,7 @@ public class DBManager extends SQLiteOpenHelper {
     static String DBname = "parameter";
     static String TBname = "min_max";
     static String TBname_temp = "min_max_temp";
+    static String TBname_music = "Musics_tb";
     static String id = "id";
     static String user_1 = "user_1";
     static String user_2 = "user_2";
@@ -56,6 +57,8 @@ public class DBManager extends SQLiteOpenHelper {
         db.execSQL(sqlQuerry);
         Log.e("DBmanager","create TB success");
     }
+
+
 
     public void DropTB(){
         String sqlDrop = "DROP TABLE IF EXISTS "+TBname;

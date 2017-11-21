@@ -10,13 +10,13 @@ import java.util.List;
 public class FilterC {
     int user1;
     int size;
-    List<Integer> user2_per1 = new ArrayList<Integer>();
+    List<ValueC> user2_per1 = new ArrayList<ValueC>();
 
-    public List<Integer> getUser2_per1() {
+    public List<ValueC> getUser2_per1() {
         return user2_per1;
     }
 
-    public void setUser2_per1(List<Integer> user2_per1) {
+    public void setUser2_per1(List<ValueC> user2_per1) {
         this.user2_per1 = user2_per1;
     }
 

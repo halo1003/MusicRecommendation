@@ -3,6 +3,7 @@ package com.example.dotoan.musicrecommendation;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
@@ -23,8 +24,11 @@ import com.example.dotoan.musicrecommendation.Contruct.DistanceC;
 import com.example.dotoan.musicrecommendation.Contruct.FilterC;
 import com.example.dotoan.musicrecommendation.Contruct.ListC;
 import com.example.dotoan.musicrecommendation.Contruct.Node;
-import com.example.dotoan.musicrecommendation.MainPage.NavigationActivity;
+import com.example.dotoan.musicrecommendation.Contruct.ValueC;
+import com.example.dotoan.musicrecommendation.MainPage.NavigateDrawer;
 import com.example.dotoan.musicrecommendation.SQLite.DBManager;
+import com.github.ybq.android.spinkit.style.DoubleBounce;
+import com.github.ybq.android.spinkit.style.FadingCircle;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -137,8 +141,11 @@ public class MainActivity extends AppCompatActivity {
 
         boolean f = false;
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) {
+        SharedPreferences sp1=this.getSharedPreferences("Login", MODE_PRIVATE);
+        String id = sp1.getString("_id", null);
+        Log.e("TAGid",id+"");
 
+        if (user != null || id != null) {
             f = true;
         } else {
             // User is signed out
@@ -195,8 +202,8 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     txtv.setText("Waiting ...("+ finalI +"/3)");
                     if (finalI == 3) {
-                        Intent nav_i = new Intent(getApplicationContext(), NavigationActivity.class);
-                        startActivity(nav_i);
+                        Intent admin_i = new Intent(getApplicationContext(), NavigateDrawer.class);
+                        startActivity(admin_i);
                     }
                 }
             }, 1000);
@@ -216,10 +223,14 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         Log.e("MainActivity","run");
         txtvUpdate.setVisibility(View.INVISIBLE);
+
+        FadingCircle fadingCircle = new FadingCircle();
+        progressBar.setIndeterminateDrawable(fadingCircle);
+
         PermissionListener permissionlistener = new PermissionListener() {
             @Override
             public void onPermissionGranted() {
-                hacking();
+                //hacking();
                 if (signIn_check()){
                     progressBar.setVisibility(View.VISIBLE);
                     delay();
@@ -280,22 +291,25 @@ public class MainActivity extends AppCompatActivity {
         double last = Gmax(distance_compare);
         double initial_step = Gmin(distance_compare);
 
-        int element_require = 1253/n;
+        int element_require = (int) (nUser/Math.sqrt(nUser/2));
         List<ListC>  group = new ArrayList<ListC>();
 
         double Radius = initial_step;
         double step = initial_step;
         int count = 0;
-        while (Radius<=last){
+        while (Radius<=last || db.getNodesCount("min_max_temp")!=0){
             Log.e("Radius", String.valueOf(Radius)+" - "+db.getNodesCount("min_max_temp"));
             int user1 = 0;
             List<FilterC> filter = new ArrayList<FilterC>();
             while(user1<1253){
 //                Log.d("user1", String.valueOf(user1));
-                List<Integer> user2_per1 = new ArrayList<Integer>();
+                List<ValueC> user2_per1 = new ArrayList<ValueC>();
                 for (Node i : db.Querry(user1)){
                     if (i.getDistance()<=Radius){
-                        user2_per1.add(i.getUser_2());
+                        ValueC valueC = new ValueC();
+                        valueC.setUser(i.getUser_2());
+                        valueC.setDistance(i.getDistance());
+                        user2_per1.add(valueC);
                     }
                 }
                 FilterC filterC = new FilterC();
@@ -310,12 +324,11 @@ public class MainActivity extends AppCompatActivity {
             Node objUser = maxL(filter);
             int maxUser = objUser.getMax();
             int user1_Discussion = objUser.getUser_1();
-            List<Integer> arr = objUser.getArrayList();
+            List<ValueC> arr = objUser.getArrayList();
 
             if (maxUser < element_require) {
-                double dbMin = db.Min("min_max_temp");
-                Radius = Radius + dbMin;
-                Log.e("Status","Not found,dbMin = "+dbMin+", Increase Radius to "+Radius);
+                Radius = Radius + step;
+                Log.e("Status","Not found, Increase Radius to "+Radius);
             }
             else{
                 ListC listC = new ListC();
@@ -324,19 +337,20 @@ public class MainActivity extends AppCompatActivity {
                 listC.setUser2(arr);
 
                 group.add(listC);
-                for (int i: arr){
-                    db.Delete_user2(i);
+                for (ValueC i: arr){
+                    db.Delete_user2(i.getUser());
                 }
-                Radius = Radius + initial_step;
-                Log.e("Status","Group found, User Discussion is "+user1_Discussion+" Step reset, Radius update to "+Radius);
+                Log.e("Status","Group found, User centroid is "+user1_Discussion);
             }
         }
 
         databaseReference.child("Relative Group").removeValue();
         List<Node> cquerry  = db.cQuerry();
+        int number = 0;
         for (Node i: cquerry){
-            databaseReference.child("Relative Group").child("Unknown group").child("Size").setValue(cquerry.size());
-            databaseReference.child("Relative Group").child("Unknown group").child("Array").setValue(i.getUser_1());
+            databaseReference.child("Relative Group").child("Unknown").child("Array").child("Size").setValue(cquerry.size());
+            databaseReference.child("Relative Group").child("Unknown").child("Array").child("Value").child(String.valueOf(number++)).setValue(i.getUser_1());
+            databaseReference.child("Relative Group").child("Unknown").child("Radius").setValue(Radius);
         }
 
         for (ListC i: group){
@@ -378,7 +392,7 @@ public class MainActivity extends AppCompatActivity {
     private Node maxL(List<FilterC> li){
         int max = 0;
         int user1 = 0;
-        List<Integer> user2_per1 = new ArrayList<Integer>();
+        List<ValueC> user2_per1 = new ArrayList<ValueC>();
 
         for (int i =0;i<li.size();i++){
             if (li.get(i).getSize()>max){
