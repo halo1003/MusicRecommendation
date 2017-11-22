@@ -216,25 +216,48 @@ public class IntentServiceDistance extends IntentService {
                 public void onDataChange(DataSnapshot dataSnapshot) {
 
                     GenericTypeIndicator<List<HashMap<String,String>>> t = new GenericTypeIndicator<List<HashMap<String,String>>>() {};
-                    List<HashMap<String,String>> hash_list = dataSnapshot.child("listen").getValue(t);
+                    final List<HashMap<String,String>> hash_list = dataSnapshot.child("listen").getValue(t);
                     final int objPos[] = new int[hash_list.size()];
                     final double objVal[] = new double[hash_list.size()];
                     Log.e("besic",hash_list+"");
-                    int temp = 0;
+                    final int[] temp = {0};
                     for (HashMap singleHash: hash_list){
-                        temp++;
                         for (Object mid_obj : singleHash.keySet()){
-                            String mid = mid_obj.toString();
+                            final String mid = mid_obj.toString();
                             Log.e("mid",mid);
-                            double order = Double.parseDouble(singleHash.get(mid_obj).toString());
-                            int pos = _Query(mid);
-                            Log.e("pos",pos+"");
-                            if (pos!=-1){
-                                objPos[j[0]] = pos;
-                                objVal[j[0]] = order;
-                                Log.e("TAG","TAGTEST");
-                                j[0]++;
-                            }
+                            final double order = Double.parseDouble(singleHash.get(mid_obj).toString());
+
+                            final int[] _id = {-1};
+                            Log.e("_QUERY","x");
+                            databaseReference.child("musics").orderByChild("mid").equalTo(mid).limitToFirst(1).addValueEventListener(new ValueEventListener() {
+                                @Override
+                                public void onDataChange(DataSnapshot dataSnapshot) {
+                                    if (dataSnapshot.exists()) {
+                                        temp[0]++;
+                                        for (DataSnapshot singleSnap : dataSnapshot.getChildren()) {
+                                            MusicC musicC = singleSnap.getValue(MusicC.class);
+                                            _id[0] = musicC.get_id();
+                                            sendResultString(_id[0] + " Founded");
+                                            objPos[j[0]] = _id[0];
+                                            objVal[j[0]] = order;
+                                            Log.e("TAG","TAGTEST");
+                                            j[0]++;
+                                        }
+
+                                        if (temp[0] == hash_list.size()) ObjlockNotify(lockObj);
+                                    }else {
+                                        temp[0]++;
+                                        sendResultString(mid + "Not Founded");
+                                        if (temp[0] == hash_list.size()) ObjlockNotify(lockObj);
+                                    }
+                                }
+
+                                @Override
+                                public void onCancelled(DatabaseError databaseError) {
+
+                                }
+                            });
+
                         }
                     }
 
@@ -308,7 +331,7 @@ public class IntentServiceDistance extends IntentService {
     }
 
 
-    public int _Query(String q){
+    public int _Query(final String q){
         final int[] _id = {-1};
         Log.e("_QUERY","x");
         databaseReference.child("musics").orderByChild("mid").equalTo(q).limitToFirst(1).addValueEventListener(new ValueEventListener() {
@@ -321,11 +344,10 @@ public class IntentServiceDistance extends IntentService {
                         _id[0] =  musicC.get_id();
                         sendResultString(_id[0]+" Founded");
                         if (_id[0] != -1) ObjlockNotify(lockObj);
-                        break;
                     }
                 }else{
                     ObjlockNotify(lockObj);
-//                    sendResultString(+" Not Founded");
+                    sendResultString(q+" Not Founded");
                 }
             }
 
