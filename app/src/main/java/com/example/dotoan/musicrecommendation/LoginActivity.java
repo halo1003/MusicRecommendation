@@ -191,6 +191,7 @@ public class LoginActivity extends FragmentActivity {
                 if (dataSnapshot.exists()){
                     superActivityToast.dismiss();
                     for (DataSnapshot singleSnap: dataSnapshot.getChildren()){
+                        String id = singleSnap.getKey().toString();
                         GenericTypeIndicator<List<HashMap<String,String>>> t = new GenericTypeIndicator<List<HashMap<String,String>>>() {};
                         List<HashMap<String,String>> hash = singleSnap.child("listen").getValue(t);
                         //7701a7b264c5f73ef3895d6dab2660f265c6c0e2
@@ -201,7 +202,7 @@ public class LoginActivity extends FragmentActivity {
 
                         SharedPreferences.Editor editor = getSharedPreferences("Login", MODE_PRIVATE).edit();
                         editor.putString("_id",userC.get_id());
-                        editor.putString("id",userC.getId());
+                        editor.putString("id",id);
                         editor.putString("list", hashMapString);
                         editor.apply();
                     }

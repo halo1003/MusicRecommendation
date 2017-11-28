@@ -2,12 +2,11 @@ package com.example.dotoan.musicrecommendation.MainPage;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.app.SearchManager;
 import android.content.Intent;
 import android.content.SearchRecentSuggestionsProvider;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -33,21 +32,14 @@ import java.util.HashMap;
 public class NavigateDrawer extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
+    boolean isAdmin = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_navigate_drawer);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -74,17 +66,30 @@ public class NavigateDrawer extends AppCompatActivity
 
         Log.e("ARRAY",arrayList+"");
 
-
-
         TextView name = (TextView)header.findViewById(R.id.name);
         TextView email = (TextView)header.findViewById(R.id.email);
+
+        FragmentManager fragmentManager = getFragmentManager();
 
         if (_id!=null){
             email.setText(_id);
             name.setText(id);
+
+            navigationView = (NavigationView) findViewById(R.id.nav_view);
+            Menu nav_Menu = navigationView.getMenu();
+            nav_Menu.findItem(R.id.nav_user).setVisible(false);
+            nav_Menu.findItem(R.id.nav_database_fix).setVisible(false);
+            fragmentManager.beginTransaction().replace(R.id.content_frame,new NormalFragment()).commit();
         }else if (fAuth!=null){
             name.setText(fAuth.getCurrentUser().getDisplayName());
             email.setText(fAuth.getCurrentUser().getEmail());
+            isAdmin = true;
+
+            navigationView = (NavigationView) findViewById(R.id.nav_view);
+            Menu nav_Menu = navigationView.getMenu();
+            nav_Menu.findItem(R.id.nav_normal).setVisible(false);
+
+            fragmentManager.beginTransaction().replace(R.id.content_frame,new AdminFragment()).commit();
         }
 
         navigationView.setNavigationItemSelectedListener(this);
@@ -129,13 +134,14 @@ public class NavigateDrawer extends AppCompatActivity
         int id = item.getItemId();
         FragmentManager fragmentManager = getFragmentManager();
 
-        if (id == R.id.nav_user) {
+        if (id == R.id.nav_user && isAdmin) {
             fragmentManager.beginTransaction().replace(R.id.content_frame,new AdminFragment()).commit();
 
-        } else if (id == R.id.nav_normal) {
+        } else if (id == R.id.nav_normal && !isAdmin) {
             fragmentManager.beginTransaction().replace(R.id.content_frame,new NormalFragment()).commit();
 
         } else if (id == R.id.nav_signout) {
+
             FirebaseAuth fAuth = FirebaseAuth.getInstance();
             SharedPreferences sp1=this.getSharedPreferences("Login", MODE_PRIVATE);
             String _id = sp1.getString("_id",null);

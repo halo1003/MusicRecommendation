@@ -1,25 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:custom="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical">
-    <EditText
+
+    <LinearLayout
+        android:layout_margin="10dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/search_m"/>
+        android:orientation="horizontal"
+        android:background="@drawable/round">
 
-    <Button
-        android:id="@+id/search_b"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:text="Search"/>
+        <EditText
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:id="@+id/search_m"
+            android:paddingLeft="10dp"
+            android:paddingRight="10dp"
+            android:hint="Search..."
+            android:textSize="15dp"
+            android:background="@android:color/transparent"/>
+
+        <com.dd.processbutton.iml.ActionProcessButton
+            android:id="@+id/search_b"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:text="Search"
+            android:textColor="@android:color/white"
+            android:textSize="15dp"
+            custom:pb_colorComplete="@color/green_complete"
+            custom:pb_colorNormal="@color/blue_normal"
+            custom:pb_colorPressed="@color/blue_pressed"
+            custom:pb_colorProgress="@color/purple_progress"
+            custom:pb_textComplete="Done"
+            custom:pb_textProgress="Searching..."
+            custom:pb_textError="Not found"
+            custom:pb_colorError="@color/red_error"/>
+
+    </LinearLayout>
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/rvMusics"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_margin="10dp"/>
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:layout_weight="1" />
 </LinearLayout>

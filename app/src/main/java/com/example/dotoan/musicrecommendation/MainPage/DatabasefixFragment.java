@@ -10,11 +10,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
+import com.example.dotoan.musicrecommendation.Contruct.Mdetail;
+import com.example.dotoan.musicrecommendation.Contruct.MusicC;
 import com.example.dotoan.musicrecommendation.R;
+import com.example.dotoan.musicrecommendation.SQLite.DBMusicsManager;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import butterknife.BindView;
@@ -29,7 +33,10 @@ public class DatabasefixFragment extends Fragment {
     View view;
 
     @BindView(R.id.btn_fix) Button btn_fix;
+    @BindView(R.id.btn_fix_add) Button btn_music;
     private Unbinder unbinder;
+    int i = 0;
+
 
     @Nullable
     @Override
@@ -63,6 +70,93 @@ public class DatabasefixFragment extends Fragment {
                 });
             }
         });
+
+
+        btn_music.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                DBMusicsManager dbMusicsManager = new DBMusicsManager(getActivity());
+                dbMusicsManager.DropTB();
+                dbMusicsManager.CreateTB();
+
+               DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
+               databaseReference.child("Musicdetail").child("detail").addListenerForSingleValueEvent(new ValueEventListener() {
+                   @Override
+                   public void onDataChange(DataSnapshot dataSnapshot) {
+                       Log.e("TAG",dataSnapshot.toString());
+                       for(DataSnapshot single: dataSnapshot.getChildren()){
+                           Mdetail m = single.getValue(Mdetail.class);
+                           dbMusicsManager.addNode(m);
+                       }
+                   }
+
+                   @Override
+                   public void onCancelled(DatabaseError databaseError) {
+
+                   }
+               });
+            }
+        });
         return view;
     }
+
+    public class A{
+        int id;
+        String mid;
+        String name;
+        String artict;
+        String tract;
+
+        public A() {
+        }
+
+        public A(int id, String mid, String name, String artict, String tract) {
+            this.id = id;
+            this.mid = mid;
+            this.name = name;
+            this.artict = artict;
+            this.tract = tract;
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        public void setId(int id) {
+            this.id = id;
+        }
+
+        public String getMid() {
+            return mid;
+        }
+
+        public void setMid(String mid) {
+            this.mid = mid;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getArtict() {
+            return artict;
+        }
+
+        public void setArtict(String artict) {
+            this.artict = artict;
+        }
+
+        public String getTract() {
+            return tract;
+        }
+
+        public void setTract(String tract) {
+            this.tract = tract;
+        }
+    }
+
 }

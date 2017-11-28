@@ -60,7 +60,6 @@
 
         <activity
             android:name=".MainPage.NavigateDrawer"
-            android:label="@string/title_activity_navigate_drawer"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <service
@@ -68,7 +67,12 @@
             android:exported="false" />
         <service
             android:name=".IntentService.IntentServiceDistance"
-            android:exported="false"></service>
+            android:exported="false" />
+
+        <activity
+            android:name=".MainPage.RecommendActivity"
+            android:theme="@style/AppTheme.NoActionBar"/>
+
     </application>
 
 </manifest>
