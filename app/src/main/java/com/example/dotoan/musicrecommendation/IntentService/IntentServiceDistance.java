@@ -1,6 +1,7 @@
 package com.example.dotoan.musicrecommendation.IntentService;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -11,7 +12,11 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.example.dotoan.musicrecommendation.Contruct.GroupUserC;
+import com.example.dotoan.musicrecommendation.Contruct.Item;
 import com.example.dotoan.musicrecommendation.Contruct.MusicC;
+import com.example.dotoan.musicrecommendation.SQLite.DBThreadU;
+import com.example.dotoan.musicrecommendation.ThreadU.CenThread;
+import com.example.dotoan.musicrecommendation.ThreadU.ObjThread;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -29,6 +34,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import static com.example.dotoan.musicrecommendation.SQLite.DBThreadU.cenTB;
+import static com.example.dotoan.musicrecommendation.SQLite.DBThreadU.simTB;
+import static com.example.dotoan.musicrecommendation.ThreadU.CenThread.Threadname;
 
 
 /**
@@ -49,6 +58,9 @@ public class IntentServiceDistance extends IntentService {
     int n = 25;
     int nMusic = 13369;
     int nUser = 1259;
+    int temp = 0;
+    double x_sim;
+    List<GroupUserC> distance = new ArrayList<GroupUserC>();
 
     static final public String RECOM_RESULT = "com.REQUEST_PROCESSED_DISTANCE";
     static final public String RECOM_MESSAGE_LIST = "com.MSG.LIST";
@@ -56,7 +68,11 @@ public class IntentServiceDistance extends IntentService {
     static final public String RECOM_MESSAGE_ARRAY_DOUBLE = "com.MSG.ARRAY.DOUBLE";
     static final public String RECOM_MESSAGE_STRING = "com.MSG.STRING";
 
-    private Object lockObj = new Object();
+    public static boolean done = false;
+    public static Object lockObj = new Object();
+    public static String Iservice = "IntentServiceDis";
+    public static Context context;
+
     final DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
 
     public IntentServiceDistance() {
@@ -72,8 +88,15 @@ public class IntentServiceDistance extends IntentService {
     }
 
     @Override
+    public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
+        context = getApplicationContext();
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    @Override
     public void onStart(@Nullable Intent intent, int startId) {
         super.onStart(intent, startId);
+        Log.e(Iservice,"start()");
         sendResultString("onStart()");
     }
 
@@ -90,231 +113,33 @@ public class IntentServiceDistance extends IntentService {
         final String ids = sp1.getString("id",null);
         final int id = Integer.parseInt(ids);
 
-//        Gson gson = new Gson();
-//        String arrayListString = sp1.getString("list", null);
-//        Type type = new TypeToken<ArrayList<HashMap<String,String>>>() {}.getType();
+        Log.e("id",id+"");
 
-        final ArrayList<HashMap<String,String>> arrayList = new ArrayList<HashMap<String,String>>();
-
-        databaseReference.child("udata").child(String.valueOf(id)).child("listen").addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                for (DataSnapshot singleSnap: dataSnapshot.getChildren()){
-                    HashMap<String,String> hm = new HashMap<String,String>();
-                    for (DataSnapshot sin: singleSnap.getChildren()){
-                        hm.put(sin.getKey().toString(),sin.getValue().toString());
-                        arrayList.add(hm);
-                    }
-                }
-                Log.e("addlist","Done");
-                ObjlockNotify();
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
-
-        synchronized (lockObj){
-            try {
-                lockObj.wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        CenThread cenThread = new CenThread(id);
+        cenThread.start();
+        try {
+            cenThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
-        Log.e("ArrayList_size()",arrayList.size()+"");
+        DBThreadU dbThreadU = new DBThreadU(context);
+        Log.e(Threadname+" cenTB",dbThreadU.getNodesCount(cenTB)+"");
 
-        final ArrayList<Integer> cenPos = new ArrayList<Integer>();
-        final ArrayList<Double> cenVal = new ArrayList<Double>();
-
-        for (HashMap s: arrayList){
-            for (Object o:s.keySet()){
-                String mid = o.toString();
-                double order = Double.parseDouble(s.get(o).toString());
-
-                databaseReference.child("musics").orderByChild("mid").equalTo(mid).limitToFirst(1).addValueEventListener(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        if (dataSnapshot.exists()){
-                            for(DataSnapshot singleSnap: dataSnapshot.getChildren()){
-                                MusicC musicC = singleSnap.getValue(MusicC.class);
-                                int pos =  musicC.get_id();
-                                cenPos.add(pos);
-                                cenVal.add(order);
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-
-                    }
-                });
-            }
+        ObjThread objThread = new ObjThread(id);
+        objThread.start();
+        try {
+            objThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-
-            @Override
-            public void run() {
-                // TODO:
-               //////////////////////////////////////
-                List<String> keys = new ArrayList<String>();
-
-                final ArrayList<Integer> cluster = new ArrayList<Integer>();
-                databaseReference.child("Relative Group").addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(DataSnapshot dataSnapshot) {
-                        for (final DataSnapshot singleSnap: dataSnapshot.getChildren()){
-                            String keyid = singleSnap.getKey().toString();
-
-                            DatabaseReference db = FirebaseDatabase.getInstance().getReference("Relative Group/" + keyid);
-                            Query query = db.child("Array").child("Value").orderByChild("user").equalTo(id).limitToFirst(1);
-                            query.addListenerForSingleValueEvent(new ValueEventListener() {
-                                @Override
-                                public void onDataChange(DataSnapshot dataSnapshot) {
-                                    if (dataSnapshot.exists()) {
-                                        for (DataSnapshot single : singleSnap.child("Array").child("Value").getChildren()) {
-                                            GroupUserC groupUserC = single.getValue(GroupUserC.class);
-                                            cluster.add(groupUserC.getUser());
-                                        }
-                                        Log.e("cluster", cluster+"");
-
-                                        List<GroupUserC> distance = new ArrayList<GroupUserC>();
-
-                                        for (final int i : cluster) {
-                                            final int[] j = {0};
-                                            final double[] x_sim = {-1};
-                                            databaseReference.child("udata").child(String.valueOf(i)).addListenerForSingleValueEvent(new ValueEventListener() {
-                                                @Override
-                                                public void onDataChange(DataSnapshot dataSnapshot) {
-
-                                                    GenericTypeIndicator<List<HashMap<String, String>>> t = new GenericTypeIndicator<List<HashMap<String, String>>>() {
-                                                    };
-                                                    final List<HashMap<String, String>> hash_list = dataSnapshot.child("listen").getValue(t);
-
-                                                    final List<Integer> objPos = new ArrayList<Integer>();
-
-                                                    final List<Double> objVal = new ArrayList<Double>();
-
-                                                    final int[] temp = {0};
-                                                    int te = 0;
-                                                    for (HashMap singleHash : hash_list) {
-                                                        te++;
-                                                        Log.e("OKe", te +" "+hash_list.size());
-
-                                                        for (Object mid_obj : singleHash.keySet()) {
-                                                            final String mid = mid_obj.toString();
-                                                            final double order = Double.parseDouble(singleHash.get(mid_obj).toString());
-
-                                                            int finalTe = te;
-                                                            databaseReference.child("musics").orderByChild("mid").equalTo(mid).limitToFirst(1).addValueEventListener(new ValueEventListener() {
-                                                                @Override
-                                                                public void onDataChange(DataSnapshot dataSnapshot) {
-                                                                    if (dataSnapshot.exists()) {
-                                                                        temp[0]++;
-                                                                        for (DataSnapshot singleSnap : dataSnapshot.getChildren()) {
-                                                                            MusicC musicC = singleSnap.getValue(MusicC.class);
-                                                                            int pos = musicC.get_id();
-                                                                            objPos.add(pos);
-                                                                            objVal.add(order);
-
-                                                                            if (temp[0] == hash_list.size()) {
-                                                                                x_sim[0] = similarityDistance(toDoubleArray(cenVal), toIntArray(cenPos), toDoubleArray(objVal), toIntArray(objPos));
-                                                                                GroupUserC groupUserC = new GroupUserC();
-                                                                                groupUserC.setDistance(x_sim[0]);
-                                                                                groupUserC.setUser(i);
-
-                                                                                distance.add(groupUserC);
-
-                                                                                Log.e("TAG1", i+" "+cluster.get(cluster.size() - 1));
-                                                                                Log.e("TAG1", finalTe +" "+hash_list.size());
-
-                                                                                if (singleHash == hash_list.get(hash_list.size() - 1) && i == cluster.get(cluster.size() - 1)) {
-                                                                                    Log.e("SEND1","OK");
-                                                                                    sendResultString(GetSmallestDistance(distance) + "");
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    } else {
-                                                                        temp[0]++;
-                                                                        if (temp[0] == hash_list.size()) {
-                                                                            x_sim[0] = similarityDistance(toDoubleArray(cenVal), toIntArray(cenPos), toDoubleArray(objVal), toIntArray(objPos));
-                                                                            GroupUserC groupUserC = new GroupUserC();
-                                                                            groupUserC.setDistance(x_sim[0]);
-                                                                            groupUserC.setUser(i);
-
-                                                                            distance.add(groupUserC);
-
-                                                                        }
-
-                                                                        Log.e("TAG2", i+" "+cluster.get(cluster.size() - 1));
-                                                                        Log.e("TAG2", finalTe +" "+hash_list.size());
-
-                                                                        if (singleHash == hash_list.get(hash_list.size() - 1) && i == cluster.get(cluster.size() - 1)) {
-                                                                            Log.e("SEND2","OK");
-                                                                            sendResultString(GetSmallestDistance(distance) + "");
-                                                                        }
-                                                                    }
-                                                                }
-
-                                                                @Override
-                                                                public void onCancelled(DatabaseError databaseError) {
-
-                                                                }
-                                                            });
-                                                        }
-                                                    }
-                                                }
-
-                                                @Override
-                                                public void onCancelled(DatabaseError databaseError) {
-
-                                                }
-                                            });
-                                        }
-                                    }
-                                }
-
-                                @Override
-                                public void onCancelled(DatabaseError databaseError) {
-
-                                }
-                            });
-                        }
-                    }
-
-                    @Override
-                    public void onCancelled(DatabaseError databaseError) {
-
-                    }
-                });
-
-
-                for (String keyid: keys) {
-
-                }
-            ////////////////////////////////////////////
-            }
-        }, 3000);
-    }
-
-    public void ObjlockNotify() {
-        synchronized (lockObj) {
-            lockObj.notify();
-        }
-    }
-
-    public int[] toIntArray(List<Integer> list) {
-        int[] ret = new int[ list.size() ];
-        int i = 0;
-        for(Iterator<Integer> it = list.iterator();
-            it.hasNext();
-            ret[i++] = it.next() );
-        return ret;
+        Log.e("COUNT",dbThreadU.getNodesCount(simTB)+"");
+        List<Item> sim = dbThreadU.getAllNode_forSim(simTB);
+        int pos = GetSmallestDistance(sim);
+        pos--;
+        Log.e("GET",sim.get(pos).getId()+"");
+        sendResultString(sim.get(pos).getId()+"");
     }
 
     public double[] toDoubleArray(List<Double> list) {
@@ -326,63 +151,37 @@ public class IntentServiceDistance extends IntentService {
         return ret;
     }
 
-    public int GetSmallestDistance(List<GroupUserC> li){
-        double smallest = li.get(1).getDistance();
-        int pos = li.get(1).getUser();
-        for (GroupUserC groupUserC: li){
-            if(groupUserC.getDistance()!= 0 && groupUserC.getDistance() < smallest){
-                smallest = groupUserC.getDistance();
-                pos = groupUserC.getUser();
+    public int GetSmallestDistance(List<Item> li){
+        double smallest = li.get(0).getDis();
+        int pos = 0;
+        if (smallest == 0) {
+            smallest = li.get(1).getDis();
+            pos = 1;
+        }
+        //int pos = li.get(0).getId();
+        int j =0;
+        for (Item i: li){
+            if(i.getDis()!= 0 && i.getDis() < smallest){
+                smallest = i.getDis();
+                pos = j;
             }
+            j++;
         }
         return pos;
     }
 
-    private synchronized double similarityDistance(double centVal[], int centPos[], double objVal[], int objPos[]) {
-        double tag = 0.0, cenX = 0.0, cenY = 0.0, sol = 0.0;
-
-        if (centPos.length >= objPos.length) {
-            for (int i = 0; i < centPos.length; i++) {
-                if (i < objPos.length) {
-                    for (int j = 0; j < objPos.length; j++) {
-                        if (centPos[i] == objPos[j]) {
-                            tag = tag + (centVal[i] - objVal[j]) * (centVal[i] - objVal[j]);
-                            break;
-                        }
-
-                        if (j == objPos.length - 1) {
-                            cenX = cenX + centVal[i] * centVal[i];
-                            cenY = cenY + objVal[i] * objVal[i];
-                        }
-                    }
-                } else {
-                    cenX = cenX + centVal[i] * centVal[i];
-                }
-                sol = tag + cenX + cenY;
-            }
-        } else {
-            for (int i = 0; i < objPos.length; i++) {
-                if (i < centPos.length) {
-                    for (int j = 0; j < centPos.length; j++) {
-                        if (centPos[j] == objPos[i]) {
-                            tag = tag + (centVal[j] - objVal[i]) * (centVal[j] - objVal[i]);
-
-                            break;
-                        }
-
-                        if (j == centPos.length - 1) {
-                            cenX = cenX + centVal[i] * centVal[i];
-                            cenY = cenY + objVal[i] * objVal[i];
-                        }
-                    }
-                } else {
-                    cenY = cenY + objVal[i] * objVal[i];
-                }
-                sol = tag + cenX + cenY;
-            }
-        }
-
-        double s = Math.sqrt(sol);
-        return (double) Math.round(s * 10000) / 10000;
-    }
+//    class ThreadB extends Thread {
+//        int total;
+//
+//        @Override
+//        public void run() {
+//            for (int i = 0; i < 100; i++) {
+//                total += i;
+//            }
+//            synchronized(ThreadA.latch) {
+//                ThreadA.done = true;
+//                ThreadA.latch.notify();
+//            }
+//        }
+//    }
 }

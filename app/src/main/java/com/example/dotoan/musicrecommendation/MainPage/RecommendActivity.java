@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.widget.TextView;
 
 import com.example.dotoan.musicrecommendation.Contruct.MusicC;
@@ -19,6 +20,8 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -59,9 +62,11 @@ public class RecommendActivity extends Activity {
                         query.addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override
                             public void onDataChange(DataSnapshot dataSnapshot) {
-                                for (DataSnapshot single: dataSnapshot.getChildren()){
-                                    MusicC m = single.getValue(MusicC.class);
-                                    li.add(m);
+                                if (dataSnapshot.exists()) {
+                                    for (DataSnapshot single : dataSnapshot.getChildren()) {
+                                        MusicC m = single.getValue(MusicC.class);
+                                        li.add(m);
+                                    }
                                 }
                             }
 
@@ -72,14 +77,7 @@ public class RecommendActivity extends Activity {
                         });
                     }
                 }
-
-                MusicsAdapter adapter = new MusicsAdapter(li, getApplicationContext());
-                adapter.notifyDataSetChanged();
-
-                LinearLayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
-                layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-                recyclerView.setLayoutManager(layoutManager);
-                recyclerView.setAdapter(adapter);
+                ObjlockNotify();
             }
 
             @Override
@@ -87,10 +85,28 @@ public class RecommendActivity extends Activity {
 
             }
         });
+
+        synchronized (lockObj){
+            try {
+                Log.e("l","lock");
+                lockObj.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        MusicsAdapter adapter = new MusicsAdapter(li, getApplicationContext());
+        adapter.notifyDataSetChanged();
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
+        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setAdapter(adapter);
     }
 
     public void ObjlockNotify() {
         synchronized (lockObj) {
+            Log.e("l","unlock");
             lockObj.notify();
         }
     }

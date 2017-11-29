@@ -20,7 +20,6 @@ import android.widget.EditText;
 import com.dd.processbutton.iml.ActionProcessButton;
 import com.example.dotoan.musicrecommendation.Contruct.Mdetail;
 import com.example.dotoan.musicrecommendation.Contruct.MusicC;
-import com.example.dotoan.musicrecommendation.Contruct.RPush;
 import com.example.dotoan.musicrecommendation.Contruct.itemC;
 import com.example.dotoan.musicrecommendation.IntentService.IntentServiceDistance;
 import com.example.dotoan.musicrecommendation.InterfaceClass.OnGetDataListener;
