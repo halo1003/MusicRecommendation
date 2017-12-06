@@ -78,7 +78,7 @@ public class ShowMIntentService extends IntentService {
                     int fiKey = Integer.parseInt(sinSnap.getKey().toString());
                     for (DataSnapshot sin: sinSnap.getChildren()){
                         String seKey = sin.getKey().toString();
-                        Log.e("seKey",seKey+" "+count);
+                        //Log.e("seKey",seKey+" "+count);
                         Query query = databaseReference.child("musics").orderByChild("mid").equalTo(seKey).limitToFirst(1);
                         query.addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override

@@ -133,12 +133,14 @@ public class ObjThread extends Thread {
             }
         }
 
-        //Log.e(Threadname+"cluster",cluster+"");
+        Log.e(Threadname+"cluster",cluster+"");
         DBThreadU dbThreadU = new DBThreadU(context);
         dbThreadU.DropTB(simTB);
         dbThreadU.CreateTB_forSim(simTB);
 
+        int tempClu = 0;
         for (int clu: cluster){
+            Log.e(Threadname+"orderCluster",++tempClu+"/"+cluster.size());
             dbThreadU.DropTB(objTBi);
             dbThreadU.CreateTB_forObj(objTBi);
 

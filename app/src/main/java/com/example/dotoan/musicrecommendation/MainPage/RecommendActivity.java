@@ -76,7 +76,6 @@ public class RecommendActivity extends Activity {
                 DBShow dbShow = new DBShow(getApplicationContext());
                 if (mess!=null){
                     li = dbShow.getAllNode(DBShow.TBname);
-                    Log.e("LI",li+"");
                     MusicsAdapter adapter = new MusicsAdapter(li, getApplicationContext());
                     adapter.notifyDataSetChanged();
 

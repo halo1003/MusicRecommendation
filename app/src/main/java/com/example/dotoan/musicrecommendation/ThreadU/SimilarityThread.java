@@ -58,7 +58,7 @@ public class SimilarityThread extends Thread{
         double[] cV =  toDoubleArray(cenVal);
         double[] oV =  toDoubleArray(objVal);
         double c = similarityDistance(cV, cP, oV, oP);
-        //Log.e(threadname,c+" "+uObj);
+        Log.e(threadname+"Similarity",c+" -- "+uObj);
         dbThreadU.addNode_forSim(simTB,uObj,c);
     }
 
