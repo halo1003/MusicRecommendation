@@ -134,11 +134,11 @@ public class IntentServiceDistance extends IntentService {
             e.printStackTrace();
         }
 
-        Log.e("COUNT",dbThreadU.getNodesCount(simTB)+"");
+        Log.e("The number of Simmer",dbThreadU.getNodesCount(simTB)+"");
         List<Item> sim = dbThreadU.getAllNode_forSim(simTB);
         int pos = GetSmallestDistance(sim);
         pos--;
-        Log.e("GET",sim.get(pos).getId()+"");
+//        Log.e("GET",sim.get(pos).getId()+"");
         sendResultString(sim.get(pos).getId()+"");
     }
 

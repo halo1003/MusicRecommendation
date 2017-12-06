@@ -33,7 +33,7 @@ public class SubThread extends Thread {
     @Override
     public synchronized void start() {
         super.start();
-        Log.e(threadName,"start()");
+        //Log.e(threadName,"start()");
     }
 
     static DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();

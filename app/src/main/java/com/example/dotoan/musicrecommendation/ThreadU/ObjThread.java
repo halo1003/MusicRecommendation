@@ -64,7 +64,7 @@ public class ObjThread extends Thread {
 
         synchronized (lockObject){
             try {
-                Log.e("lock","lock");
+                //Log.e("lock","lock");
                 lockObject.wait();
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -95,7 +95,7 @@ public class ObjThread extends Thread {
 
         synchronized (lockObject){
             try {
-                Log.e("lock","lock");
+                //Log.e("lock","lock");
                 lockObject.wait();
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -126,14 +126,14 @@ public class ObjThread extends Thread {
 
         synchronized (lockObject){
             try {
-                Log.e("lock","lock");
+                //Log.e("lock","lock");
                 lockObject.wait();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
 
-        Log.e(Threadname+"cluster",cluster+"");
+        //Log.e(Threadname+"cluster",cluster+"");
         DBThreadU dbThreadU = new DBThreadU(context);
         dbThreadU.DropTB(simTB);
         dbThreadU.CreateTB_forSim(simTB);
@@ -179,7 +179,7 @@ public class ObjThread extends Thread {
                     }
 
                     synchronized (lockObj){
-                        Log.e("lock---","unlock");
+                        //Log.e("lock---","unlock");
                         lockObj.notify();
                     }
 
@@ -194,7 +194,7 @@ public class ObjThread extends Thread {
 
             synchronized (lockObj){
                 try {
-                    Log.e("lock---","lock");
+                    //Log.e("lock---","lock");
                     lockObj.wait();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -218,7 +218,7 @@ public class ObjThread extends Thread {
 
     private void notifyObject(){
         synchronized (lockObject){
-            Log.e("lock","unlock");
+            //Log.e("lock","unlock");
             lockObject.notify();
         }
     }

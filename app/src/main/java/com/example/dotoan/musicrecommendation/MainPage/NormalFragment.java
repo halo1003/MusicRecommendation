@@ -64,6 +64,8 @@ public class NormalFragment extends Fragment {
 
     String po;
     String mi;
+    String Artic;
+    String name;
 
     @Override
     public void onStart() {
@@ -117,10 +119,12 @@ public class NormalFragment extends Fragment {
                     superActivityToast.show();
                 }else if (s_string!=null && isNumeric(s_string)) {
                     superActivityToast.dismiss();
-                    Log.e("GET",s_string);
+                    Log.e("GET",s_string+", "+po+", "+mi);
                     Intent i = new Intent(getActivity(), RecommendActivity.class);
                     i.putExtra("pos",po);
                     i.putExtra("mid",mi);
+                    i.putExtra("artic",Artic);
+                    i.putExtra("name",name);
                     i.putExtra("user",s_string);
                     startActivity(i);
                 }
@@ -170,7 +174,7 @@ public class NormalFragment extends Fragment {
 
                             adapter.setOnItemClickedListener(new MusicsAdapter.OnItemClickedListener() {
                                 public void onItemClick(itemC itm) {
-                                    Log.e("MUDIC", itm.getId() + " " + itm.getMid());
+                                    Log.e("MUDIC", itm.getId() + " " + itm.getMid()+" "+itm.getName()+" "+itm.getArtic());
 //                                    Intent pass = new Intent(getActivity(), RecommendActivity.class);
 //                                    pass.putExtra("_id", musicC.get_id());
 //                                    pass.putExtra("mid",musicC.getMid());
@@ -188,6 +192,9 @@ public class NormalFragment extends Fragment {
                                                 if (key!=null && key.equals(itm.getMid())){
                                                     po = String.valueOf(itm.getId());
                                                     mi = itm.getMid();
+                                                    Artic = itm.getArtic();
+                                                    name = itm.getName();
+                                                    Log.e("INTEST",po+","+mi);
                                                     int value = Integer.parseInt(single.getValue().toString())+1;
                                                     b = false;
                                                     databaseReference.child("udata").child(ids).child("listen").child(String.valueOf(i)).child(key).setValue(value+"", new DatabaseReference.CompletionListener() {
@@ -201,13 +208,20 @@ public class NormalFragment extends Fragment {
                                             }
 
                                         }
-                                        if (b) databaseReference.child("udata").child(ids).child("listen").child(String.valueOf(i+1)).child(itm.getMid()).setValue(1+"", new DatabaseReference.CompletionListener() {
-                                            @Override
-                                            public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-                                                Intent i_ser = new Intent(getActivity(), IntentServiceDistance.class);
-                                                getActivity().startService(i_ser);
-                                            }
-                                        });
+
+                                        if (b) {
+                                            po = String.valueOf(itm.getId());
+                                            mi = itm.getMid();
+                                            Artic = itm.getArtic();
+                                            name = itm.getName();
+                                            databaseReference.child("udata").child(ids).child("listen").child(String.valueOf(i + 1)).child(itm.getMid()).setValue(1 + "", new DatabaseReference.CompletionListener() {
+                                                @Override
+                                                public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                                                    Intent i_ser = new Intent(getActivity(), IntentServiceDistance.class);
+                                                    getActivity().startService(i_ser);
+                                                }
+                                            });
+                                        }
                                     }
 
                                     @Override

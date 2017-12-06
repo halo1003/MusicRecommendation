@@ -71,8 +71,11 @@
 
         <activity
             android:name=".MainPage.RecommendActivity"
-            android:theme="@style/AppTheme.NoActionBar"/>
+            android:theme="@style/AppTheme.NoActionBar" />
 
+        <service
+            android:name=".IntentService.ShowMIntentService"
+            android:exported="false"></service>
     </application>
 
 </manifest>
